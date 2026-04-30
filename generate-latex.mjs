@@ -18,11 +18,13 @@ import { resolve, basename, dirname, join } from 'path';
 import { execFileSync } from 'child_process';
 import { existsSync, mkdirSync } from 'fs';
 
-const REQUIRED_SECTIONS = [
-  '\\\\section{Education}',
-  '\\\\section{Work Experience}',
-  '\\\\section{Personal Projects}',
-  '\\\\section{Technical Skills}',
+// Accept either the upstream section naming or the user's template naming.
+// We require that at least one variant from each group is present.
+const REQUIRED_SECTION_GROUPS = [
+  ['\\\\section{Education}'],
+  ['\\\\section{Work Experience}', '\\\\section{Experience}'],
+  ['\\\\section{Personal Projects}', '\\\\section{Projects}'],
+  ['\\\\section{Technical Skills}'],
 ];
 
 const REQUIRED_COMMANDS = [
@@ -50,10 +52,11 @@ async function main() {
 
   const issues = [];
 
-  // Check required sections
-  for (const pattern of REQUIRED_SECTIONS) {
-    if (!new RegExp(pattern).test(content)) {
-      issues.push(`Missing section matching: ${pattern}`);
+  // Check required sections (grouped alternatives)
+  for (const group of REQUIRED_SECTION_GROUPS) {
+    const ok = group.some(pattern => new RegExp(pattern).test(content));
+    if (!ok) {
+      issues.push(`Missing required section (any of): ${group.join(' OR ')}`);
     }
   }
 

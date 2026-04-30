@@ -35,10 +35,13 @@ The template at `templates/cv-template.tex` uses `{{PLACEHOLDER}}` syntax:
 | `{{LINKEDIN_DISPLAY}}` | Display text only (no scheme): `linkedin.com/in/username` |
 | `{{GITHUB_URL}}` | Full URL with scheme for `\href{}`: e.g. `https://github.com/username`. If `profile.yml` stores a bare host+path, prepend `https://`. |
 | `{{GITHUB_DISPLAY}}` | Display text only (no scheme): `github.com/username` |
+| `{{SUMMARY}}` | One-sentence (or two short sentences) professional summary, keyword-aligned to the JD (escaped text only) |
 | `{{EDUCATION}}` | LaTeX `\resumeSubheading` blocks from cv.md Education section |
 | `{{EXPERIENCE}}` | LaTeX `\resumeSubheading` + `\resumeItem` blocks — reordered bullets |
 | `{{PROJECTS}}` | LaTeX `\resumeProjectHeading` + `\resumeItem` blocks — top 3-4 selected |
 | `{{SKILLS}}` | LaTeX `\textbf{Category}{: items}` lines from cv.md Technical Skills |
+| `{{RESEARCH_SECTION}}` | Optional full LaTeX block (may be empty string). If present, MUST include `\section{Research}` and its contents |
+| `{{EXTRACURRICULAR_SECTION}}` | Optional full LaTeX block (may be empty string). If present, MUST include `\section{Extracurricular}` and its contents |
 
 ## LaTeX Content Generation Rules
 
@@ -123,7 +126,7 @@ All text content MUST be escaped for LaTeX before insertion:
 ## ATS Rules (same as pdf mode)
 
 - Single-column layout (enforced by template)
-- Standard section headers: Education, Work Experience, Personal Projects, Technical Skills
+- Standard section headers: Education, Experience (or Work Experience), Projects (or Personal Projects), Technical Skills
 - UTF-8, machine-readable via `\pdfgentounicode=1`
 - Keywords distributed: first bullet of each role, skills section
 - No images, no graphics, no color in body text

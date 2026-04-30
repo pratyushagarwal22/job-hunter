@@ -25,6 +25,7 @@ modes/_profile.md
 
 # Secrets (never commit — use .env.example as template)
 .env
+secrets/
 
 # Generated
 .resolved-prompt-*

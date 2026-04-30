@@ -6,7 +6,7 @@ Evidence-heavy context to complement `cv.md`. This file holds the granular numbe
 
 ## 1. Snapshot & Positioning
 
-- **Current role:** Data Engineer Intern, Kohler Co. (Digital Transformation Team) — Champaign, IL — Jun 2025 to May 2025.
+- **Current role:** Data Engineer Intern, Kohler Co. (Digital Transformation Team) — Champaign, IL — Jun 2025 to May 2026.
 - **Education:** MS in Information Management, University of Illinois at Urbana-Champaign (UIUC), Aug 2024 – May 2026, GPA 3.75/4.0.
 - **Total professional experience:** 3+ years across Data Engineering, Analytics, Trust & Safety, Strategy, Product, and Marketing.
 - **Self-positioning (from LinkedIn About):** Data Engineer and Analytics professional building SQL analytics workflows, ETL pipelines, and BI systems across manufacturing and marketplace environments. Strengthening foundations in cloud computing, ML, data warehousing, information modeling, and data visualization at UIUC.
@@ -19,7 +19,7 @@ Evidence-heavy context to complement `cv.md`. This file holds the granular numbe
 
 ## 2. Major Wins (with numbers)
 
-### Kohler Co. — Data Engineer Intern (Jun 2025 – Present)
+### Kohler Co. — Data Engineer Intern (Jun 2025 – May 2026)
 - Built and maintained **6 Power BI operational dashboards** tracking manufacturing KPIs across plants, **saving ~10 hours of manual reporting per week** for plant leadership.
 - Mapped and standardized **on-prem SQL Server schemas** into a unified Enterprise Data Model — produced ER diagrams and a data dictionary to support scalable analytics company-wide.
 - Implemented an ETL pipeline using **Azure Data Factory + Databricks** to ingest SharePoint datasets into Parquet-based Raw and Curated layers (medallion-style).

@@ -15,7 +15,13 @@
     "rollback": "node update-system.mjs rollback",
     "liveness": "node check-liveness.mjs",
     "scan": "node scan.mjs",
-    "gemini:eval": "node gemini-eval.mjs"
+    "gemini:eval": "node gemini-eval.mjs",
+    "jobhunt:bootstrap": "node jobhunt/command-center-bootstrap.mjs",
+    "jobhunt:test-write": "node jobhunt/test-write.mjs",
+    "jobhunt:smoke": "node jobhunt/google-smoke-test.mjs",
+    "jobhunt:cleanup": "node jobhunt/cleanup-test-data.mjs",
+    "jobhunt:resume-pdf": "node jobhunt/generate-resume-pdf.mjs",
+    "jobhunt:master-resume": "node jobhunt/generate-master-resume-pdf.mjs"
   },
   "keywords": [
     "ai",
@@ -34,6 +40,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "dotenv": "^16.4.5",
+    "googleapis": "^171.4.0",
     "js-yaml": "^4.1.1",
     "playwright": "^1.58.1"
   }
