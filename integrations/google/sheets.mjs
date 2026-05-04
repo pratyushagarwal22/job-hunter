@@ -8,6 +8,7 @@ export const REQUIRED_TABS = [
   'ASSETS',
   'OUTREACH',
   'PIPELINE_STATUS',
+  'CONTACTS_MASTER',
 ];
 
 export async function getSheetIdByTitle(title) {
@@ -57,7 +58,7 @@ export async function appendRow(tabTitle, values) {
   const res = await sheets.spreadsheets.values.append({
     spreadsheetId,
     range,
-    valueInputOption: 'RAW',
+    valueInputOption: 'USER_ENTERED',
     insertDataOption: 'INSERT_ROWS',
     requestBody: { values: [values] },
   });
@@ -149,6 +150,44 @@ export async function setDropdownValidation({ tabTitle, a1Range, options }) {
   return { ok: true };
 }
 
+export async function clearDataValidation({ tabTitle, a1Range }) {
+  const { sheets, spreadsheetId } = await getSpreadsheet();
+  const sheetId = await getSheetIdByTitle(tabTitle);
+  if (sheetId == null) throw new Error(`Sheet not found: ${tabTitle}`);
+
+  const m = a1Range.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)?$/);
+  if (!m) throw new Error(`Invalid A1 range for clearing validation: ${a1Range}`);
+  const [, colA, rowA, colB, rowB] = m;
+
+  const colToIndex = (col) => {
+    let n = 0;
+    for (const ch of col) n = n * 26 + (ch.charCodeAt(0) - 64);
+    return n - 1;
+  };
+
+  const startColumnIndex = colToIndex(colA);
+  const endColumnIndex = colToIndex(colB) + 1;
+  const startRowIndex = Number(rowA) - 1;
+  const endRowIndex = rowB ? Number(rowB) : undefined;
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          repeatCell: {
+            range: { sheetId, startRowIndex, endRowIndex, startColumnIndex, endColumnIndex },
+            cell: { dataValidation: null },
+            fields: 'dataValidation',
+          },
+        },
+      ],
+    },
+  });
+
+  return { ok: true };
+}
+
 export async function clearTabExceptHeader(tabTitle) {
   const { sheets, spreadsheetId } = await getSpreadsheet();
 
@@ -160,6 +199,21 @@ export async function clearTabExceptHeader(tabTitle) {
   });
 
   return { cleared: true };
+}
+
+/**
+ * Re-apply SHORTLIST pursue dropdown after any appendRow(INSERT_ROWS) on that tab.
+ * Appending rows can shift validation so B2 (first data row) loses the dropdown UI.
+ */
+export async function reapplyShortlistPursueDropdown() {
+  await ensureMinRows('SHORTLIST', 50000);
+  await clearDataValidation({ tabTitle: 'SHORTLIST', a1Range: 'B2:B' });
+  await setDropdownValidation({
+    tabTitle: 'SHORTLIST',
+    a1Range: 'B2:B',
+    options: ['UNREVIEWED', 'PURSUE', 'HOLD', 'SKIP'],
+  });
+  return { ok: true };
 }
 
 export async function ensureMinRows(tabTitle, minRows) {

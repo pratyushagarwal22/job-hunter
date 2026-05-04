@@ -4,7 +4,7 @@
  *
  * Minimal end-to-end check:
  * - Fills templates/cv-template.tex placeholders with safe sample content
- * - Compiles to PDF via generate-latex.mjs (tectonic/pdflatex)
+ * - Compiles to PDF via generate-latex.mjs (pdflatex)
  * - Uploads PDF into Drive under RESUME/<Company>/<Date_JOBID>/
  * - Appends an ASSETS row with the resume link
  *
@@ -41,10 +41,6 @@ function latexEscape(s) {
     .replace(/\^/g, '\\textasciicircum{}');
 }
 
-function stripScheme(u) {
-  return String(u || '').replace(/^https?:\/\//, '');
-}
-
 const now = new Date();
 const date = ymd(now);
 
@@ -64,49 +60,57 @@ const profileRaw = await readFile(profilePath, 'utf-8');
 const profile = yaml.load(profileRaw);
 const c = profile?.candidate || {};
 
-const name = c.full_name || 'Your Name';
-const email = c.email || 'you@example.com';
-const linkedinUrl = c.linkedin || 'https://linkedin.com/in/username';
-const phone = c.phone || '';
-const location = c.location || '';
-
-const contactLine = [phone, location].filter(Boolean).join(' $|$ ');
-
-// Minimal content blocks that satisfy validator requirements.
+// Minimal content blocks that satisfy validator requirements (matches cv-template placeholders only).
 const summary = latexEscape(profile?.narrative?.headline || 'ATS-friendly summary goes here.');
 
 const education = [
-  '\\resumeSubheading',
-  '  {University}{Aug 2024 -- May 2026}',
-  '  {Degree; GPA}{City, State}',
+  '    \\resumeSubheading',
+  '      {University}{Aug 2024 -- May 2026}',
+  '      {Degree; GPA}{City, State}',
+  '      \\resumeEducationCoursework{Relevant Coursework}{Example course list.}',
+  '      \\resumeEducationCertifications{Certifications}{Example cert list.}',
 ].join('\n');
 
 const skills = [
-  '\\item{',
-  '  \\textbf{Languages}{: Python, SQL} \\\\',
-  '  \\textbf{Data}{: Airflow, dbt, Spark} \\\\',
-  '  \\textbf{Cloud}{: AWS, GCP, Azure}',
-  '}',
+  '   \\item{',
+  '     \\textbf{Languages}{: Python, SQL} \\\\',
+  '     \\textbf{Data}{: Airflow, dbt, Spark} \\\\',
+  '     \\textbf{Cloud}{: AWS, GCP, Azure}',
+  '   }',
 ].join('\n');
 
 const experience = [
-  '\\resumeSubheading',
-  '  {Company}{Jan 2025 -- Present}',
-  '  {Role}{Location}',
-  '  \\resumeItemListStart',
-  '    \\resumeItem{Impact}{Shipped an end-to-end data pipeline with measurable outcomes.}',
-  '  \\resumeItemListEnd',
+  '    \\resumeSubheading',
+  '      {Company}{Jan 2025 -- Present}',
+  '      {Role}{Location}',
+  '      \\resumeItemListStart',
+  '        \\item {Shipped an end-to-end data pipeline with measurable outcomes.}',
+  '      \\resumeItemListEnd',
 ].join('\n');
 
 const projects = [
-  '\\resumeProjectHeading{Project Name}{Context}',
-  '\\resumeItemListStart',
-  '  \\resumeItem{Result}{Built something useful and quantified the impact.}',
-  '\\resumeItemListEnd',
+  '    \\resumeProjectHeadingLinks',
+  '      {https://example.com}',
+  '      {Sample Project}',
+  '      {Data Engineering, Testing}',
+  '      {https://github.com/example/repo}',
+  '      \\resumeItemListStart',
+  '        \\item {Built something useful and quantified the impact.}',
+  '      \\resumeItemListEnd',
 ].join('\n');
 
-// Optional sections empty for this test.
-const researchSection = '';
+const researchSection = [
+  '\\section{Research}',
+  '  \\resumeSubHeadingListStart',
+  '    \\resumeResearchHeading',
+  '    {\\href{https://example.com}{Sample Publication Title}}',
+  '{Venue}',
+  '        \\resumeItemListStart',
+  '            \\item {Research contribution summary.}',
+  '        \\resumeItemListEnd',
+  '  \\resumeSubHeadingListEnd',
+].join('\n');
+
 const extracurricularSection = '';
 
 // Fill LaTeX template
@@ -114,12 +118,6 @@ const tplPath = join(ROOT, 'templates', 'cv-template.tex');
 const tpl = await readFile(tplPath, 'utf-8');
 
 const filled = tpl
-  .replaceAll('{{NAME}}', latexEscape(name))
-  .replaceAll('{{EMAIL_URL}}', email)
-  .replaceAll('{{EMAIL_DISPLAY}}', latexEscape(email))
-  .replaceAll('{{LINKEDIN_URL}}', linkedinUrl)
-  .replaceAll('{{LINKEDIN_DISPLAY}}', latexEscape(stripScheme(linkedinUrl)))
-  .replaceAll('{{CONTACT_LINE}}', latexEscape(contactLine))
   .replaceAll('{{SUMMARY}}', summary)
   .replaceAll('{{EDUCATION}}', education)
   .replaceAll('{{SKILLS}}', skills)
@@ -159,7 +157,7 @@ const uploaded = await uploadFileFromPath({
   filePath: pdfOut,
 });
 
-// Write minimal ASSETS row linking the resume
+// Write minimal ASSETS row linking the resume (columns match command-center-schema ASSETS)
 await appendRow('ASSETS', [
   job_id,
   context.company,
@@ -170,6 +168,10 @@ await appendRow('ASSETS', [
   '',
   '',
   '',
+  '',
+  '',
+  '',
+  '0',
   now.toISOString(),
   'latex/pdf generation test',
 ]);

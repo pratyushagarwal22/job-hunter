@@ -54,7 +54,7 @@ Career-Ops turns any AI coding CLI into a full job search command center. Instea
 - **Processes in batch** -- evaluate 10+ offers in parallel with sub-agents
 - **Tracks everything** in a single source of truth with integrity checks
 
-> **Important: This is NOT a spray-and-pray tool.** Career-ops is a filter -- it helps you find the few offers worth your time out of hundreds. The system strongly recommends against applying to anything scoring below 4.0/5. Your time is valuable, and so is the recruiter's. Always review before submitting.
+> **Important: This is NOT a spray-and-pray tool.** Career-ops is a filter -- it helps you find the few offers worth your time out of hundreds. The system strongly recommends against applying to anything scoring below 8.0/10. Your time is valuable, and so is the recruiter's. Always review before submitting.
 
 Career-ops is agentic: Claude Code navigates career pages with Playwright, evaluates fit by reasoning about your CV vs the job description (not keyword matching), and adapts your resume per listing.
 

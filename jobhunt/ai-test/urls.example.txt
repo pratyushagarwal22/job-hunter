@@ -1,0 +1,9 @@
+# Copy this file to urls.txt in the same folder, then add 8–10 job posting URLs (one per line).
+# Lines starting with # are ignored.
+#
+#   cp jobhunt/ai-test/urls.example.txt jobhunt/ai-test/urls.txt
+#
+# Prefer public ATS pages (Greenhouse, Lever, Ashby, etc.) when possible — some sites
+# block headless browsers or require login.
+
+# https://boards.greenhouse.io/example/jobs/0000000

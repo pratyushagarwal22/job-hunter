@@ -113,7 +113,7 @@ Die vollständige Bewertung in `reports/{###}-{company-slug}-{YYYY-MM-DD}.md` ab
 
 **Datum:** {YYYY-MM-DD}
 **Archetyp:** {erkannt}
-**Score:** {X/5}
+**Score:** {X/10}
 **URL:** {URL der Stellenanzeige}
 **PDF:** {Pfad oder ausstehend}
 
@@ -138,7 +138,7 @@ Die vollständige Bewertung in `reports/{###}-{company-slug}-{YYYY-MM-DD}.md` ab
 (vollständiger Inhalt von Block F)
 
 ## G) Draft-Antworten für die Bewerbung
-(nur bei Score >= 4.5 — Entwürfe für die Antwortfelder im Bewerbungsformular)
+(nur bei Score >= 9.0 — Entwürfe für die Antwortfelder im Bewerbungsformular)
 
 ---
 
@@ -153,7 +153,7 @@ Die vollständige Bewertung in `reports/{###}-{company-slug}-{YYYY-MM-DD}.md` ab
 - Aktuelles Datum
 - Firma
 - Rolle
-- Score: Match-Durchschnitt (1-5)
+- Score: Match-Durchschnitt (0-10)
 - Status: `Evaluated`
 - PDF: ❌ (oder ✅, wenn Auto-Pipeline ein PDF erzeugt hat)
 - Report: relativer Link zur Report-Datei (z. B. `[001](reports/001-company-2026-01-01.md)`)

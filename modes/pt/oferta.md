@@ -114,7 +114,7 @@ Salvar avaliação completa em `reports/{###}-{company-slug}-{YYYY-MM-DD}.md`.
 
 **Data:** {YYYY-MM-DD}
 **Arquétipo:** {detectado}
-**Score:** {X/5}
+**Score:** {X/10}
 **URL:** {URL da vaga}
 **PDF:** {caminho ou pendente}
 
@@ -139,7 +139,7 @@ Salvar avaliação completa em `reports/{###}-{company-slug}-{YYYY-MM-DD}.md`.
 (conteúdo completo do bloco F)
 
 ## G) Rascunhos de Respostas para Candidatura
-(apenas se score >= 4.5 -- rascunhos de respostas para o formulário de candidatura)
+(apenas se score >= 9.0 -- rascunhos de respostas para o formulário de candidatura)
 
 ---
 
@@ -154,7 +154,7 @@ Salvar avaliação completa em `reports/{###}-{company-slug}-{YYYY-MM-DD}.md`.
 - Data atual
 - Empresa
 - Vaga
-- Score: média do match (1-5)
+- Score: média do match (0-10)
 - Status: `Evaluated`
 - PDF: ❌ (ou ✅ se a auto-pipeline gerou PDF)
 - Report: link relativo ao report .md (ex: `[001](reports/001-company-2026-01-01.md)`)

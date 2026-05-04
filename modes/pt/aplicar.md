@@ -80,7 +80,7 @@ Para cada pergunta, gerar a resposta seguindo:
 ```
 ## Respostas para [Empresa] -- [Vaga]
 
-Base: Report #NNN | Score: X.X/5 | Arquétipo: [tipo]
+Base: Report #NNN | Score: X.X/10 | Arquétipo: [tipo]
 
 ---
 

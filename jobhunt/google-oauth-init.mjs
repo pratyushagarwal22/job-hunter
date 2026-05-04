@@ -41,7 +41,8 @@ try {
   const { tokens } = await oAuth2Client.getToken(code);
   const savedPath = await saveOAuthToken(tokens);
   console.log(`\nSaved OAuth token to: ${savedPath}\n`);
-  console.log('Next: run `node jobhunt/google-smoke-test.mjs` to verify Drive + Sheets.\n');
+  console.log('Next: verify Google access with the e2e flow in jobhunt/RUNBOOK.md');
+  console.log('(e.g. npm run jobhunt:cleanup && npm run jobhunt:bootstrap && npm run jobhunt:seed-8)\n');
   process.exit(0);
 } catch (err) {
   console.error(`Failed to exchange code for token: ${err?.message || String(err)}`);

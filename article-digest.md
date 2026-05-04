@@ -4,16 +4,17 @@ Evidence-heavy context to complement `cv.md`. This file holds the granular numbe
 
 ---
 
-## 1. Snapshot & Positioning
+## 1. Snapshot and Positioning
 
 - **Current role:** Data Engineer Intern, Kohler Co. (Digital Transformation Team) — Champaign, IL — Jun 2025 to May 2026.
 - **Education:** MS in Information Management, University of Illinois at Urbana-Champaign (UIUC), Aug 2024 – May 2026, GPA 3.75/4.0.
-- **Total professional experience:** 3+ years across Data Engineering, Analytics, Trust & Safety, Strategy, Product, and Marketing.
+- **Total professional experience:** 3+ years across Data Engineering, Analytics, Trust and Safety, Strategy, Product, and Marketing.
 - **Self-positioning (from LinkedIn About):** Data Engineer and Analytics professional building SQL analytics workflows, ETL pipelines, and BI systems across manufacturing and marketplace environments. Strengthening foundations in cloud computing, ML, data warehousing, information modeling, and data visualization at UIUC.
 - **What he optimizes for:** Reliable data systems, close partnership with stakeholders, turning data into measurable business impact.
 - **One-line elevator:** Someone who thrives in ambiguity, translates data into direction, and consistently ships measurable impact in early-stage and large-org environments alike.
 - **LinkedIn footprint (as of capture):** 500+ connections, 2,228 followers, 226 profile views, 1,404 post impressions in trailing 7 days, 77 search appearances. Active publisher — recent posts include a Zolve Global Scholarship win and Claude Builder Club Hackathon recap (4,246 impressions on the hackathon post alone).
 - **Recognition:** Named a Zolve Global Scholarship winner (Apr 2026), supporting international students.
+- **Job search / AI scoring stance (SWE track):** Actively upskilling for software engineering (DSA, projects, core CS). **New Grad / Graduate SWE** and **SWE/SDE/SE** roles aimed at **0–2 years** or generic early-career postings should **not** be scored below **6** solely for “not enough SWE title history.” Reserve scores below **6** for SWE/SDE/SE only when the JD clearly requires **more than 2 years** of professional software development experience **or** explicitly targets **mid / senior / staff / principal** (or equivalent). See `config/profile.yml` → `ai_evaluation.software_engineering_track`.
 
 ---
 
@@ -27,9 +28,9 @@ Evidence-heavy context to complement `cv.md`. This file holds the granular numbe
 - Analyzed **Ignition Form Submissions across plants**, identifying schema inconsistencies and recommending structural fixes to preserve long-term Data Model Integrity.
 - **Proposed and led the implementation of Power BI Projects format at Kohler — the first time the company used version-controlled, team-collaborative Power BI development**, improving report governance across teams.
 
-### Apna — Data Analyst, Trust & Safety (Oct 2022 – Aug 2024, Bangalore, Remote)
+### Apna — Data Analyst, Trust and Safety (Oct 2022 – Aug 2024, Bangalore, Remote)
 - Reduced fraudulent recruiter activity on the platform by **~20% within a single month** via a SQL-based fraud detection workflow built in Metabase + Retool.
-- Cut **duplicate Trust & Safety investigations by ~35%** and saved **20+ agent hours weekly** by unifying independent reactive/proactive workstreams into a single tracking system in BigQuery + Metabase.
+- Cut **duplicate Trust and Safety investigations by ~35%** and saved **20+ agent hours weekly** by unifying independent reactive/proactive workstreams into a single tracking system in BigQuery + Metabase.
 - Halved processing time for Operations agents by building an API-based User Data Extraction Pipeline (SQL + Python + Postman + Government of India APIs — TotalKYC, GST, PAN, Aadhaar verification). Improved onboarding for **~1,200 users monthly**.
 - Reduced sign-up drop-offs by **~10%** via a revamped User Verification Workflow co-designed with PMs and engineers.
 - Improved north-star metric (Candidate Exposure to fraud) by **~5%** with a single feature: auto-pausing recruiter jobs the moment a "charging money" complaint was filed, with a 3-hour fraud investigation SLA.
@@ -37,7 +38,7 @@ Evidence-heavy context to complement `cv.md`. This file holds the granular numbe
 - Built a **15-query revamp of the team's core metrics tracking system**, backfilling 6 months of data so leadership could finally see where agent effort was actually going.
 - Identified one recruiter who had been **flagged 51 times and investigated 38 times in 6 months** across siloed workstreams — directly justified the unified-investigation system.
 
-### Google (via Smollan) — Strategy & Analytics Intern, Channel Sales Activation (Oct 2021 – Apr 2022, Singapore, Remote)
+### Google (via Smollan) — Strategy and Analytics Intern, Channel Sales Activation (Oct 2021 – Apr 2022, Singapore, Remote)
 - Built **13 Looker Studio dashboards** covering retailer market data across the US, UK, Germany, and APAC for the Global Devices and Services team during the **Pixel 6 launch**.
 - Authored bi-weekly business reports synthesizing market trends, competitor moves (Apple, Samsung launches, Amazon Echo, Apple HomePod), and strategic recommendations for executive decision-making.
 - Improved team operational efficiency by **~25%** by integrating Monday.com with Slack and standardizing communication protocols.
@@ -94,11 +95,11 @@ Evidence-heavy context to complement `cv.md`. This file holds the granular numbe
 - BigQuery (old) → BigQuery (new, with partitioning/archival)
 - BigQuery → Presto
 
-**As the solo data analyst on Trust & Safety**, Pratyush had to migrate every query and dashboard each time, learn Presto on the fly, and keep agents unblocked.
+**As the solo data analyst on Trust and Safety**, Pratyush had to migrate every query and dashboard each time, learn Presto on the fly, and keep agents unblocked.
 
 **The hard parts:**
 - Frequent friction with the data engineering team — query performance regressed during transitions, and ops agents were getting blocked.
-- **Privacy/security controls** the data eng team wanted to roll out would have broken core T&S workflows. Pratyush ran a 3-way sync with the **TNS Head, Ops Head, and Ops Managers**, gathered structured input, and brought a unified position back to data eng so they could find a workable middle ground.
+- **Privacy/security controls** the data eng team wanted to roll out would have broken core TandS workflows. Pratyush ran a 3-way sync with the **TNS Head, Ops Head, and Ops Managers**, gathered structured input, and brought a unified position back to data eng so they could find a workable middle ground.
 
 **What he learned:** How to manage upstream data infrastructure changes when he doesn't own the infrastructure. How to be a stakeholder advocate without becoming the obstruction.
 
@@ -107,7 +108,7 @@ Evidence-heavy context to complement `cv.md`. This file holds the granular numbe
 ### C. The Internal Team Fraud Investigation at Apna
 **Setup:** A pattern emerged — banned recruiters were re-onboarding with new names and phone numbers, but their job-posting patterns were nearly identical. Investigation showed the same UPI IDs and card details linked them. The chain led inward — to Apna's own sales team agents bringing them on.
 
-**Tasked by the head of T&S** to build the evidence base. Pratyush:
+**Tasked by the head of TandS** to build the evidence base. Pratyush:
 - Wrote a query joining recruiters → onboarding sales agent → fraud complaint history → current platform status.
 - Narrowed the chain down to **two specific sales team members** responsible for repeatedly onboarding flagged recruiters.
 - Delivered the data fast enough that leadership could take prompt action.
@@ -170,7 +171,7 @@ Evidence-heavy context to complement `cv.md`. This file holds the granular numbe
 
 ---
 
-### I. Global Energy ETL & BI Dashboard (UIUC coursework)
+### I. Global Energy ETL and BI Dashboard (UIUC coursework)
 - End-to-end **Tableau Prep ETL workflow** consolidating, cleaning, and transforming a **24-year dataset spanning 20 countries** with multiple energy metrics.
 - Built **4 interactive Tableau dashboards** comparing electricity capacity, renewable vs. non-renewable energy trends, energy price/index movements, and CO₂ emissions by source.
 - Comparative insights across major economies — China, US, India.
@@ -180,7 +181,7 @@ Evidence-heavy context to complement `cv.md`. This file holds the granular numbe
 ## 4. Leadership Stories
 
 ### Cross-functional partnership at scale (Apna)
-Worked daily with **Operations, Trust & Safety leadership, Product Managers, Engineers, and Business stakeholders**. Specific examples:
+Worked daily with **Operations, Trust and Safety leadership, Product Managers, Engineers, and Business stakeholders**. Specific examples:
 - **New User Onboarding revamp** — sat with PMs to identify redundant verification steps, with engineers to prototype the new flow, with Mixpanel/Metabase to instrument the events that would prove it worked. Owned the document specifying every event that needed to be tracked post-launch.
 - **Data inconsistency escalation** — when ops agents' actions stopped showing up in tables, traced the root cause to a misnamed tag on the dev side. Pulled product managers in repeatedly to get the fix prioritized; escalated to managers when needed because allowing fraudulent recruiters to remain on the platform would directly hit the north-star metric.
 
@@ -226,18 +227,18 @@ At Google, when interns under his coordination made errors that reached his mana
 
 ## 5. Domain Expertise Notes
 
-### Data Engineering & ETL
+### Data Engineering and ETL
 - **Hands-on production experience:** Azure Data Factory, Databricks, Apache Spark/PySpark, Delta Lake, Parquet, medallion architecture (Raw/Curated layers), SharePoint integration, on-prem-to-cloud migrations from SQL Server.
 - **Migration experience:** PostgreSQL → BigQuery → Presto in production, including learning Presto on the job and migrating live agent-facing queries without breaking workflows.
 - **Modeling:** ER diagram authorship, data dictionaries, enterprise data model standardization across legacy on-prem schemas.
 - **Cost optimization:** Partition filters, time-bounded scans, scheduled materialized outputs — saved $2,500/month at Apna using these techniques.
 - **Tooling outside the resume:** Apache Kafka, Airflow, dbt (per skills section), SQLAlchemy.
 
-### Analytics & BI
+### Analytics and BI
 - **Power BI:** 6 production dashboards at Kohler; introduced Power BI Projects (version-controlled collaboration) to the org for the first time.
 - **Looker Studio:** 13 dashboards at Google covering 4 regions during the Pixel 6 launch.
 - **Tableau:** 4 dashboards on a 24-year, 20-country energy dataset.
-- **Metabase + Mixpanel:** Production T&S analytics at Apna.
+- **Metabase + Mixpanel:** Production TandS analytics at Apna.
 - **Retool:** Built operational tooling for Apna's fraud-detection workflows.
 
 ### SQL — depth and breadth
@@ -245,21 +246,21 @@ At Google, when interns under his coordination made errors that reached his mana
 - Built dynamic, parameterized queries used by ops managers daily ("plug-and-play" query repo).
 - Optimized scan costs and execution time on the top 10 high-volume queries at Apna.
 - Built **15 net-new queries** for the team's revamped core-metrics tracking with 6 months of backfill.
-- Built a **detailed multi-table T&S investigation query** with partition filters, scheduled to a destination table that ops agents queried daily.
+- Built a **detailed multi-table TandS investigation query** with partition filters, scheduled to a destination table that ops agents queried daily.
 
-### Trust & Safety / Fraud Detection (a real domain, not just a tag)
+### Trust and Safety / Fraud Detection (a real domain, not just a tag)
 - **Fraud detection rules:** Recruiter document validation (PAN, GST, Aadhaar, DL), device fingerprinting, payment-instrument linkage (UPI IDs, card numbers), pattern matching on job-posting behavior.
 - **Government API integrations:** TotalKYC, GST, PAN — used Postman to test, exported Python snippets to Colab, scaled to ~1,000 verifications per batch.
 - **Workflow design:** Reactive vs. proactive investigation streams; ranking and bucketing logic so the same recruiter doesn't get re-investigated 38 times.
 - **Complaint quality filtering:** Identified that **~10% of complaints** were filed before the candidate had even applied for the job, **~5%** were duplicates from incorrect-category re-filings, and **~5%** were retaliatory after rejection. Built filters so agents focused on the real ~80%.
 
-### Cloud & Infrastructure
+### Cloud and Infrastructure
 - **AWS:** EC2, S3, Lambda, API Gateway, DynamoDB, RDS, IAM, ALB, Elastic Beanstalk, CodePipeline, Bedrock (used in TripTok).
 - **Azure:** Data Factory, Databricks, Spark on Azure (production at Kohler).
 - **GCP:** BigQuery (production at Apna), Looker Studio (production at Google).
 
 ### LLM / AI Application Layer
-- **Claude API integration** in TickerSense for source-grounded research Q&A.
+- **Claude API integration** in TickerSense for source-grounded research QandA.
 - **MCP (Model Context Protocol)** server implementation in TripTok with FastAPI.
 - **AWS Bedrock + Strands Agents** for the TripTok conversational interface.
 - Prompt Engineering bootcamp completion — used in production code, not just theory.
@@ -277,10 +278,10 @@ At Google, when interns under his coordination made errors that reached his mana
 
 ---
 
-## 6. Research & Publications (full context)
+## 6. Research and Publications (full context)
 
 ### Neural Network Inspired Efficient Scalable Task Scheduling for Cloud Infrastructure (Elsevier, Jan 2024)
-[Read on ScienceDirect](https://www.sciencedirect.com/science/article/pii/S2667345224000051?via%3Dihub)
+[Read on ScienceDirect](https://www.sciencedirect.com/science/article/pii/S2667345224000051)
 
 ANN-inspired task scheduling algorithm for cloud infrastructure. Achieves **constant-time prediction performance** even as task loads scale, with experimental evaluations on real log files showing improvements across:
 - Average start time, finish time, execution time
@@ -301,7 +302,7 @@ Implemented and evaluated the **Harmony Search (HS) algorithm** for cloud task s
 
 ---
 
-## 7. Recommendations & External Validation
+## 7. Recommendations and External Validation
 
 ### Aashish Mittal (Founder @ BrandContext; ex-Google, Berkeley, Morgan Stanley, ISB)
 Managed Pratyush during the 6-month Google Channel Sales Activation engagement (via Smollan). Recommendation (Apr 30, 2022) calls out:
@@ -353,7 +354,7 @@ Managed Pratyush during the 6-month Google Channel Sales Activation engagement (
 
 ---
 
-## 9. Coursework & Skills Stack (UIUC, full list)
+## 9. Coursework and Skills Stack (UIUC, full list)
 
 **MS Information Management (UIUC) coursework:**
 - Data, Statistical Models, and Information
@@ -369,7 +370,7 @@ Managed Pratyush during the 6-month Google Channel Sales Activation engagement (
 - Finance for Engineering Management
 
 **BTech CCE (MUJ) coursework:**
-- Programming in C, Engineering Mathematics I–IV, Data Structures, Object Oriented Programming using Java, Operating Systems, Relational Database Management Systems, Design and Analysis of Algorithms, Economics, Cryptography and Security, Linux Systems and Shell Programming, Marketing Research, Basics of Accounting, Computer Networks, Cloud Computing & Infrastructure Services, Network Security, Software Testing, Human-Computer Interaction.
+- Programming in C, Engineering Mathematics I–IV, Data Structures, Object Oriented Programming using Java, Operating Systems, Relational Database Management Systems, Design and Analysis of Algorithms, Economics, Cryptography and Security, Linux Systems and Shell Programming, Marketing Research, Basics of Accounting, Computer Networks, Cloud Computing and Infrastructure Services, Network Security, Software Testing, Human-Computer Interaction.
 
 **Top Skills (LinkedIn-pinned):** Python (Programming Language), SQL, Amazon Web Services (AWS), Google BigQuery, Cloud Computing.
 
@@ -391,18 +392,18 @@ Rejected on his first application (made the final round). Studied what went wron
 
 ---
 
-## 11. Voice & Communication Notes (for AI generation)
+## 11. Voice and Communication Notes (for AI generation)
 
 - **Tone:** Direct, evidence-led, low-ego. He prefers numbers over adjectives.
 - **Phrasing he uses about himself:** "Translates data into direction," "thrives in ambiguity," "data into measurable business impact." Avoids buzzwords like "synergy" or "disrupt."
 - **He calls out tradeoffs.** When telling a story, he tells you what he learned and what he'd do differently — not just what worked.
 - **He attributes credit to teams** — language patterns include "we shipped," "the team delivered," "I worked with X to..." — but doesn't shy away from owning his own decisions.
-- **Domain hooks he genuinely cares about:** Trust & Safety, fraud detection, manufacturing analytics, public-market research infrastructure, F1, game development.
+- **Domain hooks he genuinely cares about:** Trust and Safety, fraud detection, manufacturing analytics, public-market research infrastructure, F1, game development.
 - **What he's looking for next:** Full-time Data Engineering / Analytics Engineering / BI Engineering / Analytics roles where he can build reliable data systems, partner with stakeholders, and convert data work into measurable business impact.
 
 ---
 
-## 12. Quick Contact & Links
+## 12. Quick Contact and Links
 
 - **Email:** hi@pratyushagarwal.com
 - **Phone:** +1 (217) 305-3172

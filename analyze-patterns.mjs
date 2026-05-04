@@ -78,6 +78,22 @@ function parseTracker() {
   return entries;
 }
 
+function parseScoreTo10(raw) {
+  const s = String(raw || '').replace(/\*\*/g, '').trim();
+  const m = s.match(/^(\d+\.?\d*)\/10$/);
+  if (!m) return 0;
+  const n = parseFloat(m[1]);
+  if (Number.isNaN(n)) return 0;
+  return Math.round(n * 100) / 100;
+}
+
+function extractTableScore(lineRe, plain) {
+  const m = plain.match(lineRe);
+  if (!m) return null;
+  const cell = m[1].trim();
+  return parseScoreTo10(cell);
+}
+
 // --- Parse a single report file ---
 function parseReport(reportPath) {
   if (!existsSync(reportPath)) return null;
@@ -123,30 +139,30 @@ function parseReport(reportPath) {
   if (domainMatch) report.domain = domainMatch[1].trim();
 
   // Extract scoring table — look for table with "Global" row (using plain, bold already stripped)
-  const scoreRegex = /\|\s*(?:CV Match|Match con CV)\s*\|\s*([\d.]+)\/5\s*\|/i;
-  const northStarRegex = /\|\s*(?:North Star)\s*\|\s*([\d.]+)\/5\s*\|/i;
-  const compScoreRegex = /\|\s*(?:Comp)\s*\|\s*([\d.]+)\/5\s*\|/i;
-  const culturalRegex = /\|\s*(?:Cultural signals|Cultural)\s*\|\s*([\d.]+)\/5\s*\|/i;
+  const scoreLineRe = /\|\s*(?:CV Match|Match con CV)\s*\|\s*([^|]+)\s*\|/i;
+  const northStarLineRe = /\|\s*(?:North Star)\s*\|\s*([^|]+)\s*\|/i;
+  const compScoreLineRe = /\|\s*(?:Comp)\s*\|\s*([^|]+)\s*\|/i;
+  const culturalLineRe = /\|\s*(?:Cultural signals|Cultural)\s*\|\s*([^|]+)\s*\|/i;
   const redFlagsRegex = /\|\s*(?:Red flags)\s*\|\s*([-+]?[\d.]+)\s*\|/i;
-  const globalRegex = /\|\s*(?:Global)\s*\|\s*([\d.]+)\/5\s*\|/i;
+  const globalLineRe = /\|\s*(?:Global)\s*\|\s*([^|]+)\s*\|/i;
 
-  const cvScoreMatch = plain.match(scoreRegex);
-  if (cvScoreMatch) report.scores.cvMatch = parseFloat(cvScoreMatch[1]);
+  const cv = extractTableScore(scoreLineRe, plain);
+  if (cv != null) report.scores.cvMatch = cv;
 
-  const nsMatch = plain.match(northStarRegex);
-  if (nsMatch) report.scores.northStar = parseFloat(nsMatch[1]);
+  const ns = extractTableScore(northStarLineRe, plain);
+  if (ns != null) report.scores.northStar = ns;
 
-  const csMatch = plain.match(compScoreRegex);
-  if (csMatch) report.scores.comp = parseFloat(csMatch[1]);
+  const cs = extractTableScore(compScoreLineRe, plain);
+  if (cs != null) report.scores.comp = cs;
 
-  const culMatch = plain.match(culturalRegex);
-  if (culMatch) report.scores.cultural = parseFloat(culMatch[1]);
+  const cul = extractTableScore(culturalLineRe, plain);
+  if (cul != null) report.scores.cultural = cul;
 
   const rfMatch = plain.match(redFlagsRegex);
   if (rfMatch) report.scores.redFlags = parseFloat(rfMatch[1]);
 
-  const glMatch = plain.match(globalRegex);
-  if (glMatch) report.scores.global = parseFloat(glMatch[1]);
+  const gl = extractTableScore(globalLineRe, plain);
+  if (gl != null) report.scores.global = gl;
 
   // Extract gaps table
   const gapTableRegex = /\|\s*Gap\s*\|\s*Severity\s*\|.*?\n\|[-|\s]+\n([\s\S]*?)(?:\n\n|\n##|\n\*\*|$)/i;
@@ -224,7 +240,7 @@ function analyze() {
     const reportPath = reportMatch ? join(CAREER_OPS, reportMatch[1]) : null;
     const reportData = reportPath ? parseReport(reportPath) : null;
     const outcome = classifyOutcome(e.status);
-    const score = parseFloat(e.score) || 0;
+    const score = parseScoreTo10(e.score);
 
     // Fallback: if report didn't have Remote field, try the notes column
     const remoteSource = reportData?.remote || e.notes || '';
@@ -350,7 +366,7 @@ function analyze() {
   const positiveScores = scoresByOutcome.positive.filter(s => s > 0);
   const minPositiveScore = positiveScores.length > 0 ? Math.min(...positiveScores) : 0;
   const scoreThreshold = {
-    recommended: minPositiveScore > 0 ? Math.floor(minPositiveScore * 10) / 10 : 3.5,
+    recommended: minPositiveScore > 0 ? Math.floor(minPositiveScore * 10) / 10 : 7.0,
     reasoning: positiveScores.length > 0
       ? `Lowest score among positive outcomes is ${minPositiveScore}. No applications below this score led to progress.`
       : 'Not enough positive outcome data to determine threshold.',
@@ -405,10 +421,10 @@ function analyze() {
   }
 
   // Score threshold recommendation
-  if (minPositiveScore > 3.0) {
+  if (minPositiveScore > 6.0) {
     recommendations.push({
-      action: `Set minimum score threshold at ${scoreThreshold.recommended}/5 before generating PDFs`,
-      reasoning: `No positive outcomes below ${minPositiveScore}/5. Scores below this are wasted effort.`,
+      action: `Set minimum score threshold at ${scoreThreshold.recommended}/10 before generating PDFs`,
+      reasoning: `No positive outcomes below ${minPositiveScore}/10. Scores below this are wasted effort.`,
       impact: 'medium',
     });
   }
@@ -491,7 +507,7 @@ function printSummary(result) {
   console.log('-'.repeat(40));
   for (const [group, stats] of Object.entries(scoreComparison)) {
     if (stats.count > 0) {
-      console.log(`  ${group.padEnd(15)} avg ${stats.avg}/5  (${stats.count} entries, range ${stats.min}-${stats.max})`);
+      console.log(`  ${group.padEnd(15)} avg ${stats.avg}/10  (${stats.count} entries, range ${stats.min}-${stats.max})`);
     }
   }
 
@@ -521,7 +537,7 @@ function printSummary(result) {
   }
 
   // Score threshold
-  console.log(`\nSCORE THRESHOLD: ${scoreThreshold.recommended}/5`);
+  console.log(`\nSCORE THRESHOLD: ${scoreThreshold.recommended}/10`);
   console.log(`  ${scoreThreshold.reasoning}`);
 
   // Recommendations

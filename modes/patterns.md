@@ -17,7 +17,7 @@ Analyze all tracked applications to find patterns in outcomes and surface action
 Before running analysis, check: does `data/applications.md` have at least 5 entries with status beyond "Evaluated" (i.e., Applied, Responded, Interview, Offer, Rejected, Discarded, SKIP)?
 
 If not, tell the user:
-> "Not enough data yet -- {N}/5 applications have progressed beyond evaluation. Keep applying and come back when you have more outcomes to analyze."
+> "Not enough data yet -- only {N} applications have progressed beyond evaluation (need 5). Keep applying and come back when you have more outcomes to analyze."
 
 Exit gracefully.
 
@@ -75,7 +75,7 @@ Show each status with count and percentage of total. Use a simple table:
 
 | Outcome | Avg Score | Min | Max | Count |
 |---------|-----------|-----|-----|-------|
-| Positive | X.X/5 | X.X | X.X | X |
+| Positive | X.X/10 | X.X | X.X | X |
 | Negative | ... | | | |
 | Self-filtered | ... | | | |
 | Pending | ... | | | |
@@ -122,7 +122,7 @@ Example:
 > Key findings:
 > - Geo-restricted roles are 0% conversion (7 of 24) -- stop evaluating US/Canada-only postings
 > - Regional/global remote roles convert at 57-67% -- these are your sweet spot
-> - No positive outcomes below 4.2/5 -- consider this your score floor
+> - No positive outcomes below 8.4/10 -- consider this your score floor
 >
 > Full report: `reports/pattern-analysis-2026-04-08.md`
 

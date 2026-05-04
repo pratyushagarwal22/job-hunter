@@ -149,8 +149,8 @@ In deutschen Stellenanzeigen und Vertragsverhandlungen tauchen Begriffe auf, die
 - In Freitextfeldern: Zeitzonen-Überlappung und Verfügbarkeit explizit angeben
 
 **In Bewertungen (Scoring):**
-- Remote-Dimension bei Hybrid außerhalb deines Landes: Score **3.0** (nicht 1.0)
-- Score 1.0 nur, wenn die Stellenanzeige explizit sagt "muss 4-5 Tage/Woche vor Ort, keine Ausnahmen"
+- Remote-Dimension bei Hybrid außerhalb deines Landes: Score **6.0** (nicht 2.0)
+- Score 2.0 nur, wenn die Stellenanzeige explizit sagt "muss 4-5 Tage/Woche vor Ort, keine Ausnahmen"
 
 ### Time-to-Offer-Priorität
 - Funktionierende Demo + Metriken > Perfektion

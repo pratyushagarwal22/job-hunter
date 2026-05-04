@@ -9,8 +9,8 @@ Processa URLs de vagas acumuladas em `data/pipeline.md`. O candidato adiciona UR
    a. Calcular próximo `REPORT_NUM` sequencial (ler `reports/`, pegar o número mais alto + 1)
    b. **Extrair JD** usando Playwright (browser_navigate + browser_snapshot) → WebFetch → WebSearch
    c. Se a URL não for acessível → marcar como `- [!]` com nota e continuar
-   d. **Executar auto-pipeline completa**: Avaliação A-F → Report .md → PDF (se score >= 3.0) → Tracker
-   e. **Mover de "Pendentes" para "Processadas"**: `- [x] #NNN | URL | Empresa | Vaga | Score/5 | PDF ✅/❌`
+   d. **Executar auto-pipeline completa**: Avaliação A-F → Report .md → PDF (se score >= 6.0) → Tracker
+   e. **Mover de "Pendentes" para "Processadas"**: `- [x] #NNN | URL | Empresa | Vaga | Score/10 | PDF ✅/❌`
 3. **Se houver 3+ URLs pendentes**, lançar agentes em paralelo apenas para etapas sem Playwright (ex.: organização, WebSearch/WebFetch).
    Se a extração exigir Playwright, processar serialmente (1 vaga por vez) para evitar conflito de sessão.
 4. **Ao terminar**, mostrar tabela resumo:
@@ -28,8 +28,8 @@ Processa URLs de vagas acumuladas em `data/pipeline.md`. O candidato adiciona UR
 - [!] https://private.url/job — Erro: login necessário
 
 ## Processadas
-- [x] #143 | https://jobs.example.com/posting/789 | Acme Corp | AI PM | 4.2/5 | PDF ✅
-- [x] #144 | https://boards.greenhouse.io/xyz/jobs/012 | BigCo | SA | 2.1/5 | PDF ❌
+- [x] #143 | https://jobs.example.com/posting/789 | Acme Corp | AI PM | 8.4/10 | PDF ✅
+- [x] #144 | https://boards.greenhouse.io/xyz/jobs/012 | BigCo | SA | 4.2/10 | PDF ❌
 ```
 
 > Nota: Os títulos das seções podem estar em EN ("Pending"/"Processed"), ES ("Pendientes"/"Procesadas"), DE ("Offen"/"Verarbeitet") ou PT-BR ("Pendentes"/"Processadas"). Ao ler, ser flexível; ao escrever, manter o estilo do arquivo existente.

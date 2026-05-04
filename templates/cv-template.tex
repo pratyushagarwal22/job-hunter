@@ -46,24 +46,11 @@
 %-------------------------
 % Custom commands
 
-\newcommand{\resumeItem}[2]{
-  \item{
-    \textbf{#1}{: #2 \vspace{-2pt}}
-  }
-}
-
 \newcommand{\resumeSubheading}[4]{
   \vspace{0pt}\item
     \begin{tabular*}{\textwidth}{l@{\extracolsep{\fill}}r}
       \textbf{#1} & #2 \\
       \textit{#3} & \textit{#4} \\ 
-    \end{tabular*}\vspace{-6pt}
-}
-
-\newcommand{\resumeProjectHeading}[2]{
-  \vspace{0pt}\item
-    \begin{tabular*}{\textwidth}{l@{\extracolsep{\fill}}r}
-      \textbf{#1}{ $|$ \textit{#2}} & \\
     \end{tabular*}\vspace{-6pt}
 }
 
@@ -74,10 +61,10 @@
     \end{tabular*}\vspace{-6pt}
 }
 
-\newcommand{\resumeEducationCoursework}[1]{
+\newcommand{\resumeEducationCoursework}[2]{
   \vspace{-9pt} 
   \begin{itemize}[leftmargin=0pt, label={}]
-    \item {#1}
+    \item {#1: #2}
   \end{itemize}
 }
 
@@ -88,10 +75,10 @@
     \end{tabular*}\vspace{-6pt}
 }
 
-\newcommand{\resumeEducationCertifications}[1]{
+\newcommand{\resumeEducationCertifications}[2]{
   \vspace{-15pt} 
   \begin{itemize}[leftmargin=0pt, label={}]
-    \item {#1}
+    \item {#1: #2}
   \end{itemize}
 }
 
@@ -115,19 +102,9 @@
 
 %----------HEADING-----------------
 \begin{center}
-    \textbf{\LARGE {{NAME}}} \\ \vspace{5pt}
-    \href{mailto:{{EMAIL_URL}}}{{EMAIL_DISPLAY}} $|$ {{PHONE_DISPLAY}} $|$ \href{%
-      {{LINKEDIN_URL}}%
-    }{%
-      {{LINKEDIN_DISPLAY}}%
-    }
+    \textbf{\LARGE Pratyush Agarwal} \\ \vspace{5pt}
+    \href{mailto:hi@pratyushagarwal.com}{hi@pratyushagarwal.com} $|$ +1 (217) 305-3172 $|$ \href{https://linkedin.com/in/agarwal-pratyush/}{linkedin.com/in/agarwal-pratyush/}
 \end{center}
-
-%-----------SUMMARY-----------------
-\section{Summary}
-\begin{itemize}[leftmargin=0pt, label={}]
-  \item { {{SUMMARY}} }
-\end{itemize}
 
 %-----------EDUCATION-----------------
 \section{Education}
@@ -152,39 +129,6 @@
   \resumeSubHeadingListStart
     {{PROJECTS}}
   \resumeSubHeadingListEnd
-
-% %-----------PROJECTS-----------------
-% \section{Projects}
-%   \resumeSubHeadingListStart
-    
-%     \resumeProjectHeading
-%       {TickerSense}{Financial Research, Full-Stack Development, LLM Integration}
-%       \resumeItemListStart
-%         \item {Built a company intelligence platform that reduces fragmented public-market research by bringing SEC filings (10-K, 10-Q, 8-K, etc), company fundamentals, charts, governance disclosures, and AI-guided exploration into one interface.}
-%         \item {Developed a conversational research assistant that helps users investigate company performance and disclosure changes without providing investment recommendations, keeping official filings as the source of truth. With exportable PDF reports to support faster, evidence-based company analysis.}
-%       \resumeItemListEnd
-    
-%     \resumeProjectHeading
-%       {TripTok}{Data Engineering, Machine Learning, LLM Integration}
-%       \resumeItemListStart
-%         \item {Built an end-to-end data pipeline processing 25GB+ of NYC Taxi data using PySpark and AWS S3, generating curated datasets and ML models for fare prediction and demand forecasting.}
-%         \item {Developed predictive models using XGBoost, Random Forest, and LSTM, and deployed results through an LLM-powered analytics chatbot for real-time mobility insights.}
-%       \resumeItemListEnd
-
-    % \resumeProjectHeading
-    %   {MarketMetrics}{Data Engineering, ETL, Financial Analytics}
-    %   \resumeItemListStart
-    %     \item {Engineered a data pipeline using YFinance API to fetch real-time equity data; deployed an interactive dashboard to visualize portfolio risk metrics like VaR and Sharpe ratio.}
-    %   \resumeItemListEnd
-
-  %   \resumeProjectHeading
-  %     {F1 Race Data Engineering Pipeline}{Data Engineering, ETL, Sports Analytics}
-  %     \resumeItemListStart
-  %       \item {Built an end-to-end Formula 1 race weekend data pipeline using FastF1, Python, pandas, and SQLAlchemy to ingest, clean, and structure session, lap, telemetry, and pit stop data.}
-  %       \item {Generated analytics-ready datasets to support driver performance analysis, race insights, and downstream dashboarding.}
-  %     \resumeItemListEnd
-
-  % \resumeSubHeadingListEnd
 
 {{RESEARCH_SECTION}}
 

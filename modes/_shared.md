@@ -25,26 +25,26 @@
 
 ## Scoring System
 
-The evaluation uses 6 blocks (A-F) with a global score of 1-5:
+The evaluation uses 6 blocks (A-F) with a **global score on a 0-10 scale**:
 
 | Dimension | What it measures |
 |-----------|-----------------|
 | Match con CV | Skills, experience, proof points alignment |
 | North Star alignment | How well the role fits the user's target archetypes (from _profile.md) |
-| Comp | Salary vs market (5=top quartile, 1=well below) |
+| Comp | Salary vs market (10=top quartile, 0=well below) |
 | Cultural signals | Company culture, growth, stability, remote policy |
 | Red flags | Blockers, warnings (negative adjustments) |
 | **Global** | Weighted average of above |
 
 **Score interpretation:**
-- 4.5+ → Strong match, recommend applying immediately
-- 4.0-4.4 → Good match, worth applying
-- 3.5-3.9 → Decent but not ideal, apply only if specific reason
-- Below 3.5 → Recommend against applying (see Ethical Use in CLAUDE.md)
+- 9.0+ → Strong match, recommend applying immediately
+- 8.0-8.9 → Good match, worth applying
+- 7.0-7.9 → Decent but not ideal, apply only if specific reason
+- Below 7.0 → Recommend against applying (see Ethical Use in CLAUDE.md)
 
 ## Posting Legitimacy (Block G)
 
-Block G assesses whether a posting is likely a real, active opening. It does NOT affect the 1-5 global score -- it is a separate qualitative assessment.
+Block G assesses whether a posting is likely a real, active opening. It does NOT affect the 0-10 global score -- it is a separate qualitative assessment.
 
 **Three tiers:**
 - **High Confidence** -- Real, active opening (most signals positive)

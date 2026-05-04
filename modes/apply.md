@@ -73,7 +73,7 @@ For each question, generate the response following:
 ```text
 ## Responses for [Company] — [Role]
 
-Based on: Report #NNN | Score: X.X/5 | Archetype: [type]
+Based on: Report #NNN | Score: X.X/10 | Archetype: [type]
 
 ---
 

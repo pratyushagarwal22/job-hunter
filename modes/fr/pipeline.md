@@ -9,8 +9,8 @@ Traite les URLs d'offres accumulees dans `data/pipeline.md`. Le candidat ajoute 
    a. Calculer le prochain `REPORT_NUM` sequentiel (lire `reports/`, prendre le numero le plus eleve + 1)
    b. **Extraire l'offre** avec Playwright (`browser_navigate` + `browser_snapshot`) -> WebFetch -> WebSearch
    c. Si l'URL n'est pas accessible -> marquer comme `- [!]` avec une note et continuer
-   d. **Executer l'auto-pipeline complet** : Evaluation A-F -> Report .md -> PDF (si score >= 3.0) -> Tracker
-   e. **Deplacer de "En attente" vers "Traitees"** : `- [x] #NNN | URL | Entreprise | Role | Score/5 | PDF oui/non`
+   d. **Executer l'auto-pipeline complet** : Evaluation A-F -> Report .md -> PDF (si score >= 6.0) -> Tracker
+   e. **Deplacer de "En attente" vers "Traitees"** : `- [x] #NNN | URL | Entreprise | Role | Score/10 | PDF oui/non`
 3. **Si 3+ URLs en attente**, lancer des agents en parallele (Agent tool avec `run_in_background`) pour maximiser la vitesse.
 4. **A la fin**, afficher un tableau recapitulatif :
 
@@ -27,8 +27,8 @@ Traite les URLs d'offres accumulees dans `data/pipeline.md`. Le candidat ajoute 
 - [!] https://private.url/job -- Erreur : login requis
 
 ## Traitees
-- [x] #143 | https://jobs.example.com/posting/789 | Acme SAS | AI PM | 4.2/5 | PDF oui
-- [x] #144 | https://boards.greenhouse.io/xyz/jobs/012 | BigCo | SA | 2.1/5 | PDF non
+- [x] #143 | https://jobs.example.com/posting/789 | Acme SAS | AI PM | 8.4/10 | PDF oui
+- [x] #144 | https://boards.greenhouse.io/xyz/jobs/012 | BigCo | SA | 4.2/10 | PDF non
 ```
 
 > Note : Les en-tetes de section peuvent etre en EN ("Pending"/"Processed"), ES ("Pendientes"/"Procesadas"), DE ("Offen"/"Verarbeitet") ou FR ("En attente"/"Traitees"). Etre flexible a la lecture, fidele au style existant a l'ecriture.

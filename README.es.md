@@ -50,7 +50,7 @@ Career-Ops convierte cualquier CLI de IA en un centro de mando de busqueda de em
 - **Procesa en batch** -- evalua 10+ ofertas en paralelo con sub-agentes
 - **Trackea todo** en una fuente de verdad unica con checks de integridad
 
-> **Importante: Esto NO es para spamear empresas.** Career-ops es un filtro -- te ayuda a encontrar las pocas ofertas que merecen tu tiempo entre cientos. El sistema recomienda encarecidamente no aplicar a nada por debajo de 4.0/5. Tu tiempo es valioso, y el del recruiter tambien. Siempre revisa antes de enviar.
+> **Importante: Esto NO es para spamear empresas.** Career-ops es un filtro -- te ayuda a encontrar las pocas ofertas que merecen tu tiempo entre cientos. El sistema recomienda encarecidamente no aplicar a nada por debajo de 8.0/10. Tu tiempo es valioso, y el del recruiter tambien. Siempre revisa antes de enviar.
 
 > **Aviso: las primeras evaluaciones no seran buenas.** El sistema no te conoce todavia. Dale contexto -- tu CV, tu historia profesional, tus proof points, tus preferencias, en que eres bueno, que quieres evitar. Cuanto mas lo nutras, mejor filtra. Piensa en ello como hacer onboarding a un recruiter nuevo: la primera semana necesita conocerte, luego se vuelve invaluable.
 

@@ -4,6 +4,7 @@
  *
  * Resets the Command Center to a "fresh start" by:
  * - Deleting all data rows (keeps header row) in each tab
+ * - Re-applying SHORTLIST `pursue` dropdown on B2:B (cleanup does not fix misaligned rules by itself)
  * - Deleting Drive smoke-test files and placeholder test artifacts we created
  *
  * Usage:
@@ -11,8 +12,8 @@
  */
 
 import { loadDotenv } from '../integrations/google/env.mjs';
-import { clearTabExceptHeader } from '../integrations/google/sheets.mjs';
-import { getRootFolder, ensureSubfolders, listFilesByNamePrefix, deleteFile } from '../integrations/google/drive.mjs';
+import { clearTabExceptHeader, reapplyShortlistPursueDropdown } from '../integrations/google/sheets.mjs';
+import { getRootFolder, ensureSubfolders, deleteRecursively } from '../integrations/google/drive.mjs';
 
 await loadDotenv();
 
@@ -34,37 +35,25 @@ try {
     cleared[t] = await clearTabExceptHeader(t);
   }
   report.sheets.cleared = cleared;
+  report.sheets.shortlistValidation = await reapplyShortlistPursueDropdown();
 
   const { rootFolder } = await getRootFolder();
   const sub = await ensureSubfolders(rootFolder.id);
   const bucketIdByName = new Map((sub.folders || []).map(f => [f.name, f.id]));
 
-  const deleted = [];
-  const prefixes = [
-    'career-ops-smoke-test-',
-    'resume-JH-',
-    'coverletter-JH-',
-    'email-JH-',
-  ];
-
-  const parentsToScan = [
-    rootFolder.id,
-    bucketIdByName.get('RESUME'),
-    bucketIdByName.get('COVERLETTER'),
-    bucketIdByName.get('EMAIL'),
-  ].filter(Boolean);
-
-  for (const parentId of parentsToScan) {
-    for (const prefix of prefixes) {
-      const files = await listFilesByNamePrefix(parentId, prefix);
-      for (const f of files) {
-        await deleteFile(f.id);
-        deleted.push({ id: f.id, name: f.name });
-      }
+  // Full reset: delete EVERYTHING inside buckets, keep the bucket folders themselves.
+  const buckets = ['RESUME', 'COVERLETTER', 'EMAIL', 'JDS', 'CONTEXT'];
+  report.drive.bucketResets = {};
+  for (const b of buckets) {
+    const id = bucketIdByName.get(b);
+    if (!id) {
+      report.drive.bucketResets[b] = { ok: false, error: 'missing bucket' };
+      continue;
     }
+    const r = await deleteRecursively(id);
+    report.drive.bucketResets[b] = { ok: true, ...r };
   }
 
-  report.drive.deletedFiles = deleted;
   report.ok = true;
 } catch (err) {
   report.ok = false;

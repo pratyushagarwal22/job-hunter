@@ -1,6 +1,6 @@
 # Mode: interview-prep — Company-Specific Interview Intelligence
 
-When the user asks to prep for an interview at a specific company+role, or when an evaluation scores 4.0+ and the user updates status to `Interview`, run this mode.
+When the user asks to prep for an interview at a specific company+role, or when an evaluation scores 8.0+ and the user updates status to `Interview`, run this mode.
 
 ## Inputs
 
@@ -32,7 +32,7 @@ If the company is small or obscure and yields few results, broaden: search for t
 ## Process Overview
 - **Rounds:** {N} rounds, ~{X} days end-to-end
 - **Format:** {e.g., recruiter screen → technical phone → take-home → onsite (4 rounds) → hiring manager}
-- **Difficulty:** {X}/5 (Glassdoor avg, N reviews)
+- **Difficulty:** {X}/10 (Glassdoor avg mapped to a 0-10 scale, N reviews)
 - **Positive experience rate:** {X}%
 - **Known quirks:** {e.g., "pair programming instead of whiteboard", "no LeetCode, all practical", "take-home is 4 hours"}
 - **Sources:** {links}

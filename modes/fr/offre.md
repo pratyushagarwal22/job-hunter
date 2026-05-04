@@ -114,7 +114,7 @@ Sauvegarder l'evaluation complete dans `reports/{###}-{company-slug}-{YYYY-MM-DD
 
 **Date :** {YYYY-MM-DD}
 **Archetype :** {detecte}
-**Score :** {X/5}
+**Score :** {X/10}
 **URL :** {URL de l'offre}
 **PDF :** {chemin ou en attente}
 
@@ -139,7 +139,7 @@ Sauvegarder l'evaluation complete dans `reports/{###}-{company-slug}-{YYYY-MM-DD
 (contenu complet du bloc F)
 
 ## G) Brouillons de reponses pour la candidature
-(uniquement si score >= 4.5 -- brouillons de reponses pour le formulaire de candidature)
+(uniquement si score >= 9.0 -- brouillons de reponses pour le formulaire de candidature)
 
 ---
 
@@ -154,7 +154,7 @@ Sauvegarder l'evaluation complete dans `reports/{###}-{company-slug}-{YYYY-MM-DD
 - Date du jour
 - Entreprise
 - Role
-- Score : moyenne du match (1-5)
+- Score : moyenne du match (0-10)
 - Statut : `Evaluated`
 - PDF : non (ou oui si l'auto-pipeline a genere un PDF)
 - Report : lien relatif vers le fichier report (ex : `[001](reports/001-company-2026-01-01.md)`)

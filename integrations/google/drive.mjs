@@ -2,7 +2,37 @@ import { getDriveClientOAuth } from './auth.mjs';
 import { requireEnv } from './env.mjs';
 import { createReadStream } from 'fs';
 
-export const REQUIRED_SUBFOLDERS = ['RESUME', 'COVERLETTER', 'EMAIL'];
+export const REQUIRED_SUBFOLDERS = ['RESUME', 'COVERLETTER', 'EMAIL', 'JDS', 'CONTEXT'];
+
+/**
+ * @param {string} urlOrId Drive share URL or raw file id
+ * @returns {string | null}
+ */
+export function parseDriveFileId(urlOrId) {
+  const s = String(urlOrId || '').trim();
+  if (!s) return null;
+  if (/^[a-zA-Z0-9_-]{25,}$/.test(s) && !s.includes('/')) return s;
+  const open = s.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (open) return open[1];
+  const d = s.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (d) return d[1];
+  const u = s.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (u) return u[1];
+  return null;
+}
+
+/**
+ * Download file bytes as UTF-8 text (for text/plain JD uploads).
+ * @param {string} fileId
+ */
+export async function exportFileUtf8(fileId) {
+  const drive = await getDriveClientOAuth();
+  const res = await drive.files.get(
+    { fileId, alt: 'media' },
+    { responseType: 'arraybuffer' }
+  );
+  return Buffer.from(res.data).toString('utf-8');
+}
 
 function escapeDriveQueryValue(s) {
   return String(s).replace(/'/g, "\\'");
@@ -33,6 +63,31 @@ export async function listChildFolders(parentId) {
     includeItemsFromAllDrives: true,
   });
   return res.data.files || [];
+}
+
+export async function listChildren(parentId) {
+  const drive = await getDriveClientOAuth();
+  const q = [
+    `'${parentId}' in parents`,
+    'trashed=false',
+  ].join(' and ');
+
+  const files = [];
+  let pageToken = undefined;
+  do {
+    const res = await drive.files.list({
+      q,
+      fields: 'nextPageToken,files(id,name,mimeType)',
+      pageSize: 1000,
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+      pageToken,
+    });
+    files.push(...(res.data.files || []));
+    pageToken = res.data.nextPageToken || undefined;
+  } while (pageToken);
+
+  return files;
 }
 
 export async function findChildFolderByName(parentId, name) {
@@ -167,5 +222,16 @@ export async function deleteFile(fileId) {
     supportsAllDrives: true,
   });
   return { deleted: true, fileId };
+}
+
+export async function deleteRecursively(folderId) {
+  const children = await listChildren(folderId);
+  for (const c of children) {
+    if (c.mimeType === 'application/vnd.google-apps.folder') {
+      await deleteRecursively(c.id);
+    }
+    await deleteFile(c.id);
+  }
+  return { deletedFolderContents: true, folderId, childrenCount: children.length };
 }
 

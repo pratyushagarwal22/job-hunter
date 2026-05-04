@@ -1,0 +1,353 @@
+%-------------------------
+% Resume in Latex
+% Author: Pratyush Agarwal
+% License : MIT
+%------------------------
+
+\documentclass[letterpaper,11pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{
+    pdfborder={0 0 0}
+}
+\usepackage{fancyhdr}
+\usepackage{microtype}
+\usepackage{needspace}
+\usepackage[none]{hyphenat}
+\hyphenpenalty=10000
+\exhyphenpenalty=10000
+% Justified text, but resist mid-word breaks
+\usepackage{ragged2e}
+\tolerance=2000
+\emergencystretch=2em
+\hfuzz=0.2pt
+\usepackage[overload]{textcase} % Robust uppercase handling
+
+\pagestyle{fancy}
+\fancyhf{} 
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% --- FIXED MARGINS ---
+\addtolength{\oddsidemargin}{-0.75in}
+\addtolength{\evensidemargin}{-0.75in}
+\addtolength{\textwidth}{1.5in} 
+\addtolength{\topmargin}{-.75in}
+\addtolength{\textheight}{1.5in}
+
+\urlstyle{same}
+\raggedbottom
+\setlength{\tabcolsep}{0in}
+
+\titleformat{\section}{
+  \vspace{-10pt}\bfseries\raggedright\large
+}{}{0em}{\MakeUppercase}[\color{black}\titlerule \vspace{-7pt}]
+
+%-------------------------
+% Custom commands
+
+\newcommand{\resumeItem}[2]{
+  \item{
+    \textbf{#1}{: #2 \vspace{-2pt}}
+  }
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{0pt}\item
+    \begin{tabular*}{\textwidth}{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & #2 \\
+      \textit{#3} & \textit{#4} \\ 
+    \end{tabular*}\vspace{-6pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+  \vspace{0pt}\item
+    \begin{tabular*}{\textwidth}{l@{\extracolsep{\fill}}r}
+      \textbf{#1}{ $|\$ \textit{#2}} & \\
+    \end{tabular*}\vspace{-6pt}
+}
+
+\newcommand{\resumeProjectHeadingLinks}[4]{
+  \vspace{0pt}\item
+    \begin{tabular*}{\textwidth}{l@{\extracolsep{\fill}}r}
+      \textbf{\href{\#1}{#2}}{ $|\$ \textit{#3}} & \href{\#4}{\textit{[GitHub]}} \\
+    \end{tabular*}\vspace{-6pt}
+}
+
+\newcommand{\resumeEducationCoursework}[1]{
+  \vspace{-9pt} 
+  \begin{itemize}[leftmargin=0pt, label={}]
+    \item {\#1}
+  \end{itemize}
+}
+
+\newcommand{\resumeResearchHeading}[2]{
+  \vspace{0pt}\item
+    \begin{tabular*}{\textwidth}{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & \textit{#2} \\
+    \end{tabular*}\vspace{-6pt}
+}
+
+\newcommand{\resumeEducationCertifications}[1]{
+  \vspace{-15pt} 
+  \begin{itemize}[leftmargin=0pt, label={}]
+    \item {\#1}
+  \end{itemize}
+}
+
+
+% Bullets
+\renewcommand{\labelitemi}{\$\vcenter{\hbox{\tiny\$\bullet\$}}\$}
+\renewcommand{\labelitemii}{\$\vcenter{\hbox{\tiny\$\bullet\$}}\$}
+
+% Main list 
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0pt,label={},itemsep=-2pt]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+
+% Justified Bullets
+\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=12pt, nosep, topsep=2pt]}
+\newcommand{\resumeItemListEnd}{\end{itemize}}
+
+%-------------------------------------------
+%%%%%%  CV STARTS HERE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% career-ops:resumeItem-plain
+\renewcommand{\resumeItem}[2]{
+  \item {#2}
+}
+
+
+% career-ops:project-macro-wrap
+\renewcommand{\resumeProjectHeading}[2]{
+  \vspace{0pt}\item
+    \begin{tabular*}{\textwidth}{l@{\extracolsep{\fill}}r}
+      \textbf{#1}{ $|$ \parbox[t]{0.82\textwidth}{\textit{#2}}} & \\
+    \end{tabular*}\vspace{-6pt}
+}
+
+\renewcommand{\resumeProjectHeadingLinks}[4]{
+  \vspace{0pt}\item
+    \begin{tabular*}{\textwidth}{l@{\extracolsep{\fill}}r}
+      \textbf{\href{#1}{#2}}{ $|$ \parbox[t]{0.78\textwidth}{\textit{#3}}} & \href{#4}{\textit{[GitHub]}} \\
+    \end{tabular*}\vspace{-6pt}
+}
+
+\begin{document}
+\justifying
+
+%----------HEADING-----------------
+\begin{center}
+    \textbf{\LARGE Pratyush Agarwal} \\ \vspace{5pt}
+    \href{mailto:hi@pratyushagarwal.com}hi@pratyushagarwal.com $|\$ +1 (217) 305-3172 $|\$ \href{%
+      https://linkedin.com/in/agarwal-pratyush/%
+    }{%
+      linkedin.com/in/agarwal-pratyush/%
+    }
+\end{center}
+
+%-----------SUMMARY-----------------
+\section{Summary}
+\begin{itemize}[leftmargin=0pt, label={}]
+  \item { Data Engineer and Software Engineer with 3+ years building ETL pipelines, analytics workflows, and BI systems across manufacturing and marketplace platforms. Currently pursuing MS in Information Management at UIUC with hands-on experience in Azure, AWS, Python, SQL, and distributed systems. Delivered measurable impact including fraud detection systems reducing platform abuse by 20\%, enterprise dashboards saving 10+ hours weekly, and end-to-end data pipelines processing 25GB+ datasets. Strong foundation in cloud infrastructure, data modeling, and cross-functional collaboration, now transitioning into software engineering roles with demonstrated ability to build scalable systems and drive technical solutions from prototype to production. }
+\end{itemize}
+
+%-----------EDUCATION-----------------
+\section{Education}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {University of Illinois at Urbana-Champaign}{Aug 2024 -- May 2026}
+      {Master of Science in Information Management; GPA: 3.75/4}{Champaign, IL}
+      \resumeEducationCoursework{\textbf{Relevant Coursework:} Applied Machine Learning, Cloud Computing Applications, Data Mining, Data Warehousing and Business Intelligence, Information Modeling, Data Visualization, Data and Statistical Models}
+      \resumeEducationCertifications{\textbf{Certifications:} Getting Started with Microsoft Azure, Cloud Computing, The Complete Prompt Engineering for AI Bootcamp}
+    \resumeSubheading
+      {Manipal University Jaipur}{Jul 2018 -- Jul 2022}
+      {Bachelor of Technology in Computer and Communication Engineering; GPA: 8.53/10}{Jaipur, India}
+      \resumeEducationCoursework{\textbf{Relevant Coursework:} Data Structures and Algorithms, Relational Database Management Systems, Operating Systems, Computer Networks, Software Testing, Cryptography and Security}
+      \resumeEducationCertifications{\textbf{Certifications:} Certified Ethical Hacker (EC Council), Google Project Management Specialization, Networking in Google Cloud, Architecting with Google Kubernetes Engine, Web Application Security Testing with Burp Suite}
+  \resumeSubHeadingListEnd
+
+%--------SKILLS------------
+\section{Technical Skills}
+ \resumeSubHeadingListStart
+   \item{
+       \textbf{Programming Languages}{: Python, SQL, Java, C++, C\#, JavaScript}
+     }
+     \item{
+       \textbf{Data Engineering \& Infrastructure}{: Spark, Apache Kafka, Databricks, Airflow, dbt, Delta Lake, ETL/ELT, Data Modeling, Azure Data Factory}
+     }
+     \item{
+       \textbf{Cloud \& Distributed Systems}{: AWS (EC2, S3, Lambda, API Gateway, DynamoDB, RDS, IAM), Azure, GCP, Docker, Kubernetes, Microservices}
+     }
+     \item{
+       \textbf{Databases \& Analytics}{: PostgreSQL, Google BigQuery, Snowflake, SQL Server, Power BI, Tableau, Looker Studio, Metabase}
+     }
+     \item{
+       \textbf{Software Development \& DevOps}{: Git/GitHub, CI/CD, RESTful APIs, Message Brokers, Performance Optimization, System Design}
+     }
+ \resumeSubHeadingListEnd
+
+%-----------EXPERIENCE-----------------
+\section{Experience}
+  \resumeSubHeadingListStart
+\needspace{8\baselineskip}
+\resumeSubheading
+      {Kohler Co. [Digital Transformation Team]}{Jun 2025 -- May 2026}
+      {Data Engineer Intern}{Champaign, IL}
+      \resumeItemListStart
+        \resumeItem{Platform Development}
+          {Built and maintained 6 Power BI operational dashboards tracking manufacturing KPIs, improving plant leadership visibility and saving ~10 hours of manual reporting weekly}
+        \resumeItem{Enterprise Data Architecture}
+          {Mapped and standardized on-prem SQL Server schemas into a unified enterprise data model, designing ER diagrams and data dictionaries to support scalable analytics and upcoming AI automation initiatives}
+        \resumeItem{ETL Pipeline Implementation}
+          {Implemented Azure Data Factory and Databricks pipeline to ingest SharePoint datasets into Parquet-based raw and curated layers, enabling structured analytics workflows}
+        \resumeItem{System Integration}
+          {Integrated on-prem operational databases with Azure analytics platforms, preparing datasets for company-wide analytics and establishing version-controlled Power BI Projects format organization-wide}
+      \resumeItemListEnd
+\needspace{8\baselineskip}
+\resumeSubheading
+      {Apna [Trust and Safety Team]}{Oct 2022 -- Aug 2024}
+      {Data Analyst}{Bangalore, India}
+      \resumeItemListStart
+        \resumeItem{Fraud Detection System}
+          {Pioneered SQL-based fraud detection workflow using Metabase and Retool, reducing fraudulent recruiter activity by ~20\% within one month and enhancing platform security}
+        \resumeItem{Operational Efficiency}
+          {Unified independent workstreams into consolidated tracking system via BigQuery and Metabase dashboards, reducing duplicate investigations by ~35\% and saving 20+ agent hours weekly}
+        \resumeItem{API Integration \& Automation}
+          {Developed user data extraction pipeline using SQL, Python, and Government of India APIs, halving processing time for Operations agents and reducing sign-up drop-offs by ~10\%}
+        \resumeItem{Cross-functional Impact}
+          {Partnered with Operations, Trust \& Safety, Product, and Business stakeholders to optimize workflows and drive measurable process improvements across the platform}
+      \resumeItemListEnd
+\needspace{8\baselineskip}
+\resumeSubheading
+      {Google [Channel Sales Activation Team]}{Oct 2021 -- Apr 2022}
+      {Strategy and Analytics Intern}{Singapore}
+      \resumeItemListStart
+        \resumeItem{Business Intelligence}
+          {Delivered biweekly business reports and 13 Looker Studio BI dashboards, synthesizing market trends and strategic recommendations to drive management decision-making}
+        \resumeItem{Data Engineering}
+          {Led development of web scraping scripts using ChromeDriver and Selenium to capture and analyze daily website metrics for strategic brand and sales insights}
+      \resumeItemListEnd
+  \resumeSubHeadingListEnd
+
+%-----------PROJECTS-----------------
+\section{Projects}
+\begingroup\sloppy\emergencystretch=3em
+
+  \resumeSubHeadingListStart
+    \resumeProjectHeadingLinks
+\resumeProjectHeadingLinks{https://project-tickersense.vercel.app/}{TickerSense}{Financial Research, Full-Stack Development, LLM Integration}{https://github.com/pratyushagarwal22/tickersense}
+      \resumeItemListStart
+        \resumeItem{Company Intelligence Platform}
+          {Built a comprehensive research platform integrating SEC filings (10-K, 10-Q, 8-K), company fundamentals, charts, and governance disclosures with AI-guided exploration interface}
+        \resumeItem{Conversational Research Assistant}
+          {Developed Claude-powered Q\&A system for investigating company performance and disclosure changes, maintaining official filings as source of truth with exportable PDF reports for evidence-based analysis}
+      \resumeItemListEnd
+    \resumeProjectHeadingLinks
+\resumeProjectHeadingLinks{https://github.com/pratyushagarwal22/TripTok}{TripTok}{Data Engineering, Machine Learning, LLM Integration}{https://github.com/pratyushagarwal22/TripTok}
+      \resumeItemListStart
+        \resumeItem{Large-Scale Data Pipeline}
+          {Built end-to-end pipeline processing 25GB+ of NYC Taxi data using PySpark and AWS S3, generating curated datasets and ML models for fare prediction and demand forecasting}
+        \resumeItem{ML \& LLM Integration}
+          {Developed predictive models using XGBoost, Random Forest, and LSTM, deployed through LLM-powered analytics chatbot with AWS Bedrock and Strands Agents for real-time mobility insights}
+      \resumeItemListEnd
+    \resumeProjectHeadingLinks
+\resumeProjectHeadingLinks{https://github.com/pratyushagarwal22/F1_Projects}{F1 Race Data Engineering Pipeline}{Data Engineering, ETL, Sports Analytics}{https://github.com/pratyushagarwal22/F1_Projects}
+      \resumeItemListStart
+        \resumeItem{End-to-End ETL Pipeline}
+          {Built Formula 1 race weekend data pipeline using FastF1, Python, pandas, and SQLAlchemy to ingest, clean, and structure session, lap, telemetry, and pit stop data}
+        \resumeItem{Analytics-Ready Datasets}
+          {Generated structured datasets supporting driver performance analysis, race insights, and downstream dashboarding for motorsports analytics}
+      \resumeItemListEnd
+  \resumeSubHeadingListEnd
+
+% %-----------PROJECTS-----------------
+% 
+\endgroup
+\section{Projects}
+%   \resumeSubHeadingListStart
+    
+%     \resumeProjectHeading
+%       {TickerSense}{Financial Research, Full-Stack Development, LLM Integration}
+%       \resumeItemListStart
+%         \item {Built a company intelligence platform that reduces fragmented public-market research by bringing SEC filings (10-K, 10-Q, 8-K, etc), company fundamentals, charts, governance disclosures, and AI-guided exploration into one interface.}
+%         \item {Developed a conversational research assistant that helps users investigate company performance and disclosure changes without providing investment recommendations, keeping official filings as the source of truth. With exportable PDF reports to support faster, evidence-based company analysis.}
+%       \resumeItemListEnd
+    
+%     \resumeProjectHeading
+%       {TripTok}{Data Engineering, Machine Learning, LLM Integration}
+%       \resumeItemListStart
+%         \item {Built an end-to-end data pipeline processing 25GB+ of NYC Taxi data using PySpark and AWS S3, generating curated datasets and ML models for fare prediction and demand forecasting.}
+%         \item {Developed predictive models using XGBoost, Random Forest, and LSTM, and deployed results through an LLM-powered analytics chatbot for real-time mobility insights.}
+%       \resumeItemListEnd
+
+    % \resumeProjectHeading
+    %   {MarketMetrics}{Data Engineering, ETL, Financial Analytics}
+    %   \resumeItemListStart
+    %     \item {Engineered a data pipeline using YFinance API to fetch real-time equity data; deployed an interactive dashboard to visualize portfolio risk metrics like VaR and Sharpe ratio.}
+    %   \resumeItemListEnd
+
+  %   \resumeProjectHeading
+  %     {F1 Race Data Engineering Pipeline}{Data Engineering, ETL, Sports Analytics}
+  %     \resumeItemListStart
+  %       \item {Built an end-to-end Formula 1 race weekend data pipeline using FastF1, Python, pandas, and SQLAlchemy to ingest, clean, and structure session, lap, telemetry, and pit stop data.}
+  %       \item {Generated analytics-ready datasets to support driver performance analysis, race insights, and downstream dashboarding.}
+  %     \resumeItemListEnd
+
+  % \resumeSubHeadingListEnd
+
+\section{Research}
+  \resumeSubHeadingListStart
+    \resumeResearchHeading
+      {\href{https://www.sciencedirect.com/science/article/pii/S2667345224000051?via\\%3Dihub}{Neural Network Inspired Efficient Scalable Task Scheduling for Cloud Infrastructure}}{Elsevier}
+      \resumeItemListStart
+        \resumeItem{Algorithm Development}
+          {Proposed ANN-inspired task scheduling algorithm for cloud infrastructure, achieving constant-time prediction performance and improved scalability under increasing task loads}
+        \resumeItem{System Performance}
+          {Demonstrated improved efficiency across execution time, resource utilization, failure rates, and power consumption metrics under both underloaded and overloaded conditions}
+      \resumeItemListEnd
+    \resumeResearchHeading
+      {\href{https://ieeexplore.ieee.org/abstract/document/10444593}{Fog and Edge Computing Issues and Challenges -- A Review}}{IEEE}
+      \resumeItemListStart
+        \resumeItem{Comprehensive Analysis}
+          {Conducted review of fog and edge computing architectures, analyzing challenges including security vulnerabilities, network latency, and resource utilization in large-scale sensor systems}
+      \resumeItemListEnd
+    \resumeResearchHeading
+      {\href{https://link.springer.com/chapter/10.1007/978-3-031-08815-5\\_11}{Neural Network Based Task Scheduling in Cloud Using Harmony Search Algorithm}}{Springer}
+      \resumeItemListStart
+        \resumeItem{Algorithm Implementation}
+          {Implemented Harmony Search algorithm for cloud task scheduling using CloudSim, demonstrating improved execution time, resource allocation, and cost efficiency through simulation analysis}
+      \resumeItemListEnd
+  \resumeSubHeadingListEnd
+
+\section{Extracurricular}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {Microsoft}{Jan 2020 -- May 2021}
+      {Microsoft Learn Student Ambassador}{}
+      \resumeItemListStart
+        \resumeItem{Community Leadership}
+          {Organized large-scale hackathon with 500+ participants, fostering innovation and collaboration within the student tech community}
+        \resumeItem{Technical Education}
+          {Delivered hands-on workshops on Microsoft Azure, Power Apps, and cloud technologies, enabling students to develop practical application-building skills}
+      \resumeItemListEnd
+    \resumeSubheading
+      {MUJ ACM Student Chapter}{Aug 2019 -- May 2020}
+      {Head of Promotions \& Student Mentor}{}
+      \resumeItemListStart
+        \resumeItem{Strategic Outreach}
+          {Spearheaded promotional strategy for hackathons and technical events, increasing participation across 500-member student chapter}
+        \resumeItem{Technical Mentorship}
+          {Mentored students in core programming concepts including C, procedural programming, C++, and Data Structures, improving problem-solving foundations}
+      \resumeItemListEnd
+  \resumeSubHeadingListEnd
+
+\end{document}

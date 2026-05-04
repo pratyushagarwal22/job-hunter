@@ -80,7 +80,7 @@ Für jede Frage die Antwort nach folgendem Schema bauen:
 ```
 ## Antworten für [Firma] — [Rolle]
 
-Basis: Report #NNN | Score: X.X/5 | Archetyp: [Typ]
+Basis: Report #NNN | Score: X.X/10 | Archetyp: [Typ]
 
 ---
 

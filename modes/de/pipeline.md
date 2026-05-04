@@ -9,8 +9,8 @@ Verarbeitet URLs von Stellenanzeigen, die in `data/pipeline.md` gesammelt wurden
    a. Nächste fortlaufende `REPORT_NUM` berechnen (in `reports/` lesen, höchste Nummer + 1)
    b. **Stellenanzeige extrahieren** mit Playwright (`browser_navigate` + `browser_snapshot`) → WebFetch → WebSearch
    c. Wenn die URL nicht erreichbar ist → als `- [!]` mit Notiz markieren und weitermachen
-   d. **Vollständige Auto-Pipeline ausführen**: A-F-Bewertung → Report .md → PDF (wenn Score >= 3.0) → Tracker
-   e. **Von "Offen" nach "Verarbeitet" verschieben**: `- [x] #NNN | URL | Firma | Rolle | Score/5 | PDF ✅/❌`
+   d. **Vollständige Auto-Pipeline ausführen**: A-F-Bewertung → Report .md → PDF (wenn Score >= 6.0) → Tracker
+   e. **Von "Offen" nach "Verarbeitet" verschieben**: `- [x] #NNN | URL | Firma | Rolle | Score/10 | PDF ✅/❌`
 3. **Bei 3+ offenen URLs** Agenten parallel starten (Agent-Tool mit `run_in_background`), um Tempo zu machen.
 4. **Am Ende** eine Zusammenfassungstabelle ausgeben:
 
@@ -27,8 +27,8 @@ Verarbeitet URLs von Stellenanzeigen, die in `data/pipeline.md` gesammelt wurden
 - [!] https://private.url/job — Fehler: Login erforderlich
 
 ## Verarbeitet
-- [x] #143 | https://jobs.example.com/posting/789 | Acme GmbH | AI PM | 4.2/5 | PDF ✅
-- [x] #144 | https://boards.greenhouse.io/xyz/jobs/012 | BigCo | SA | 2.1/5 | PDF ❌
+- [x] #143 | https://jobs.example.com/posting/789 | Acme GmbH | AI PM | 8.4/10 | PDF ✅
+- [x] #144 | https://boards.greenhouse.io/xyz/jobs/012 | BigCo | SA | 4.2/10 | PDF ❌
 ```
 
 > Hinweis: Die Sektion-Überschriften können auf EN ("Pending"/"Processed"), ES ("Pendientes"/"Procesadas") oder DE ("Offen"/"Verarbeitet") sein. Beim Lesen flexibel sein, beim Schreiben dem Stil der bestehenden Datei treu bleiben.

@@ -49,7 +49,7 @@ Career-Ops transforma qualquer CLI de código com IA em uma central completa de 
 - **Processa em lote** -- avalia 10+ vagas em paralelo com subagentes
 - **Rastreia tudo** em uma única fonte de verdade com verificações de integridade
 
-> **Importante: isso NÃO é uma ferramenta de disparo em massa.** Career-ops é um filtro -- ajuda você a encontrar as poucas vagas que realmente valem seu tempo entre centenas. O sistema recomenda fortemente não se candidatar a nada com nota abaixo de 4.0/5. Seu tempo é valioso, e o do recrutador também. Sempre revise antes de enviar.
+> **Importante: isso NÃO é uma ferramenta de disparo em massa.** Career-ops é um filtro -- ajuda você a encontrar as poucas vagas que realmente valem seu tempo entre centenas. O sistema recomenda fortemente não se candidatar a nada com nota abaixo de 8.0/10. Seu tempo é valioso, e o do recrutador também. Sempre revise antes de enviar.
 
 Career-ops é agentic: Claude Code navega páginas de carreira com Playwright, avalia aderência comparando seu CV com a descrição da vaga (não por simples correspondência de palavras-chave) e adapta seu currículo para cada vaga.
 

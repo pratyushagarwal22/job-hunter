@@ -6,7 +6,7 @@
  * 1. All statuses are canonical (per states.yml)
  * 2. No duplicate company+role entries
  * 3. All report links point to existing files
- * 4. Scores match format X.XX/5 or N/A or DUP
+ * 4. Scores match format X.XX/10 or N/A or DUP
  * 5. All rows have proper pipe-delimited format
  * 6. No pending TSVs in tracker-additions/ (only in merged/ or archived/)
  * 7. states.yml canonical IDs for cross-system consistency
@@ -141,7 +141,7 @@ if (brokenReports === 0) ok('All report links valid');
 let badScores = 0;
 for (const e of entries) {
   const s = e.score.replace(/\*\*/g, '').trim();
-  if (!/^\d+\.?\d*\/5$/.test(s) && s !== 'N/A' && s !== 'DUP') {
+  if (!/^\d+\.?\d*\/10$/.test(s) && s !== 'N/A' && s !== 'DUP') {
     error(`#${e.num}: Invalid score format: "${e.score}"`);
     badScores++;
   }

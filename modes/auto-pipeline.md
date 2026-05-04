@@ -29,9 +29,9 @@ Read `config/profile.yml`. Check `cv.output_format`:
 - If `"latex"`, execute the full pipeline from `modes/latex.md`
 - Otherwise (default), execute the full pipeline from `modes/pdf.md`
 
-## Paso 4 — Draft Application Answers (solo si score >= 4.5)
+## Paso 4 — Draft Application Answers (solo si score >= 9.0)
 
-Si el score final es >= 4.5, generar borrador de respuestas para el formulario de aplicación:
+Si el score final es >= 9.0, generar borrador de respuestas para el formulario de aplicación:
 
 1. **Extraer preguntas del formulario**: Usar Playwright para navegar al formulario y hacer snapshot. Si no se pueden extraer, usar las preguntas genéricas.
 2. **Generar respuestas** siguiendo el tono (ver abajo).

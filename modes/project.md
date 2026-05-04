@@ -1,6 +1,6 @@
 # Modo: project — Evaluación de Proyecto Portfolio
 
-Scoring 6 dimensiones (1-5):
+Scoring 6 dimensiones (0-10):
 
 | Dimensión | Peso | 5 = ... | 1 = ... |
 |-----------|------|---------|---------|

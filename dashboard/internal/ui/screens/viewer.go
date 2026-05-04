@@ -488,7 +488,7 @@ func (m ViewerModel) styleLine(line string) string {
 		text := lipgloss.NewStyle().Foreground(m.theme.Subtext).Italic(true).Render(content)
 		return border + text
 	}
-	// Bold fields like **Score:** 4.0/5 — render with bold label, strip asterisks
+	// Bold fields like **Score:** 8.0/10 — render with bold label, strip asterisks
 	if strings.HasPrefix(trimmed, "**") && strings.Contains(trimmed, ":**") {
 		return m.renderInlineBold(line, m.theme.Yellow)
 	}

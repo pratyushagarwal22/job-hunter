@@ -15,7 +15,7 @@ import (
 
 var (
 	reReportLink     = regexp.MustCompile(`\[(\d+)\]\(([^)]+)\)`)
-	reScoreValue     = regexp.MustCompile(`(\d+\.?\d*)/5`)
+	reScoreValue     = regexp.MustCompile(`(\d+\.?\d*)/10`)
 	reArchetype      = regexp.MustCompile(`(?i)\*\*Arquetipo(?:\s+detectado)?\*\*\s*\|\s*(.+)`)
 	reTlDr           = regexp.MustCompile(`(?i)\*\*TL;DR\*\*\s*\|\s*(.+)`)
 	reTlDrColon      = regexp.MustCompile(`(?i)\*\*TL;DR:\*\*\s*(.+)`)

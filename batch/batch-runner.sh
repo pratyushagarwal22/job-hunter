@@ -436,7 +436,7 @@ print_summary() {
   if (( score_count > 0 )); then
     local avg
     avg=$(echo "scale=1; $score_sum / $score_count" | bc 2>/dev/null || echo "N/A")
-    echo "Average score: $avg/5 ($score_count scored)"
+    echo "Average score: $avg/10 ($score_count scored)"
   fi
 }
 

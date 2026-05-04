@@ -2,11 +2,8 @@
 /**
  * google-smoke-test.mjs
  *
- * Verifies that the service account can:
- * - Read the configured Drive root folder and ensure expected subfolders exist
- * - Read the configured Sheet and ensure required tabs exist
- * - Append a single test row to INBOX_RAW
- * - Create a tiny text file in Drive root (JOBHUNT/)
+ * Optional **minimal** OAuth/Drive/Sheets ping (appends one INBOX row + tiny Drive file).
+ * Not part of the canonical e2e — use `npm run jobhunt:seed-8` per jobhunt/RUNBOOK.md for full flow.
  *
  * Usage:
  *   node jobhunt/google-smoke-test.mjs

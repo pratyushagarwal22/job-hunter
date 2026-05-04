@@ -11,7 +11,7 @@
  */
 
 import { loadDotenv } from '../integrations/google/env.mjs';
-import { ensureTabsExist, ensureHeaders, setDropdownValidation, ensureMinRows } from '../integrations/google/sheets.mjs';
+import { ensureTabsExist, ensureHeaders, ensureMinRows, reapplyShortlistPursueDropdown } from '../integrations/google/sheets.mjs';
 import { HEADERS } from './command-center-schema.mjs';
 
 await loadDotenv();
@@ -30,12 +30,11 @@ try {
     report.rowSizing[tabTitle] = await ensureMinRows(tabTitle, minRows);
   }
 
-  // SHORTLIST.pursue dropdown values (B2:B)
-  report.validations.push(await setDropdownValidation({
-    tabTitle: 'SHORTLIST',
-    a1Range: 'B2:B',
-    options: ['UNREVIEWED', 'PURSUE', 'HOLD', 'SKIP'],
-  }));
+  // Ensure SHORTLIST is large enough so an open-ended validation range works well.
+  // (Google Sheets needs the grid to already have rows for the dropdown UI to behave consistently.)
+  report.rowSizing.SHORTLIST = await ensureMinRows('SHORTLIST', 50000);
+
+  report.validations.push(await reapplyShortlistPursueDropdown());
 
   report.ok = true;
 } catch (err) {

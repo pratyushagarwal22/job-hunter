@@ -9,8 +9,8 @@ Procesa URLs de ofertas acumuladas en `data/pipeline.md`. El usuario agrega URLs
    a. Calcular siguiente `REPORT_NUM` secuencial (leer `reports/`, tomar el número más alto + 1)
    b. **Extraer JD** usando Playwright (browser_navigate + browser_snapshot) → WebFetch → WebSearch
    c. Si la URL no es accesible → marcar como `- [!]` con nota y continuar
-   d. **Ejecutar auto-pipeline completo**: Evaluación A-F → Report .md → PDF (si score >= 3.0) → Tracker
-   e. **Mover de "Pendientes" a "Procesadas"**: `- [x] #NNN | URL | Empresa | Rol | Score/5 | PDF ✅/❌`
+   d. **Ejecutar auto-pipeline completo**: Evaluación A-F → Report .md → PDF (si score >= 6.0) → Tracker
+   e. **Mover de "Pendientes" a "Procesadas"**: `- [x] #NNN | URL | Empresa | Rol | Score/10 | PDF ✅/❌`
 3. **Si hay 3+ URLs pendientes**, lanzar agentes en paralelo (Agent tool con `run_in_background`) para maximizar velocidad.
 4. **Al terminar**, mostrar tabla resumen:
 
@@ -27,8 +27,8 @@ Procesa URLs de ofertas acumuladas en `data/pipeline.md`. El usuario agrega URLs
 - [!] https://private.url/job — Error: login required
 
 ## Procesadas
-- [x] #143 | https://jobs.example.com/posting/789 | Acme Corp | AI PM | 4.2/5 | PDF ✅
-- [x] #144 | https://boards.greenhouse.io/xyz/jobs/012 | BigCo | SA | 2.1/5 | PDF ❌
+- [x] #143 | https://jobs.example.com/posting/789 | Acme Corp | AI PM | 8.4/10 | PDF ✅
+- [x] #144 | https://boards.greenhouse.io/xyz/jobs/012 | BigCo | SA | 4.2/10 | PDF ❌
 ```
 
 ## Detección inteligente de JD desde URL

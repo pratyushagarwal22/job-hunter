@@ -45,24 +45,11 @@
 %-------------------------
 % Custom commands
 
-\newcommand{\resumeItem}[2]{
-  \item{
-    \textbf{#1}{: #2 \vspace{-2pt}}
-  }
-}
-
 \newcommand{\resumeSubheading}[4]{
   \vspace{0pt}\item
     \begin{tabular*}{\textwidth}{l@{\extracolsep{\fill}}r}
       \textbf{#1} & #2 \\
       \textit{#3} & \textit{#4} \\ 
-    \end{tabular*}\vspace{-6pt}
-}
-
-\newcommand{\resumeProjectHeading}[2]{
-  \vspace{0pt}\item
-    \begin{tabular*}{\textwidth}{l@{\extracolsep{\fill}}r}
-      \textbf{#1}{ $|$ \textit{#2}} & \\
     \end{tabular*}\vspace{-6pt}
 }
 
@@ -73,10 +60,10 @@
     \end{tabular*}\vspace{-6pt}
 }
 
-\newcommand{\resumeEducationCoursework}[1]{
+\newcommand{\resumeEducationCoursework}[2]{
   \vspace{-9pt} 
   \begin{itemize}[leftmargin=0pt, label={}]
-    \item {#1}
+    \item {#1: #2}
   \end{itemize}
 }
 
@@ -87,10 +74,10 @@
     \end{tabular*}\vspace{-6pt}
 }
 
-\newcommand{\resumeEducationCertifications}[1]{
+\newcommand{\resumeEducationCertifications}[2]{
   \vspace{-15pt} 
   \begin{itemize}[leftmargin=0pt, label={}]
-    \item {#1}
+    \item {#1: #2}
   \end{itemize}
 }
 
@@ -118,26 +105,20 @@
     \href{mailto:hi@pratyushagarwal.com}{hi@pratyushagarwal.com} $|$ +1 (217) 305-3172 $|$ \href{https://linkedin.com/in/agarwal-pratyush/}{linkedin.com/in/agarwal-pratyush/}
 \end{center}
 
-%-----------SUMMARY-----------------
-\section{Summary}
-\begin{itemize}[leftmargin=0pt, label={}]
-  \item {Data Engineer and Analytics practitioner building ETL pipelines, SQL analytics workflows, and BI reporting systems across manufacturing and marketplace platforms. Delivered dashboards, fraud detection pipelines, and enterprise data models that improved decision speed and reduced manual reporting.}
-\end{itemize}
-
 %-----------EDUCATION-----------------
 \section{Education}
   \resumeSubHeadingListStart
     \resumeSubheading
       {University of Illinois at Urbana-Champaign}{Aug 2024 -- May 2026}
       {Master of Science in Information Management; GPA: 3.75/4}{Champaign, IL} 
-      \resumeEducationCoursework{Relevant Coursework: Applied Machine Learning, Cloud Computing Applications, Data Mining, Data Warehousing and Business Intelligence, Information Modeling, Data Visualization, Data and Statistical Models.} 
-      \resumeEducationCertifications{Certifications: Getting Started with Microsoft Azure, Cloud Computing, The Complete Prompt Engineering for AI Bootcamp.}
+      \resumeEducationCoursework{Relevant Coursework}{Applied Machine Learning, Cloud Computing Applications, Data Mining, Data Warehousing and Business Intelligence, Information Modeling, Data Visualization, Data and Statistical Models.} 
+      \resumeEducationCertifications{Certifications}{Getting Started with Microsoft Azure, Cloud Computing, The Complete Prompt Engineering for AI Bootcamp.}
 
     \resumeSubheading
       {Manipal University Jaipur}{Jul 2018 -- Jul 2022}
       {Bachelor of Technology in Computer and Communication Engineering; GPA: 8.53/10}{Jaipur, India}
-      \resumeEducationCoursework{Relevant Coursework: Data Structures and Algorithms, Relational Database Management Systems, Operating Systems, Computer Networks, Software Testing, Cryptography and Security.}
-      \resumeEducationCertifications{Certifications: Certified Ethical Hacker (EC Council), Google Project Management Specialization, Networking in Google Cloud, Architecting with Google Kubernetes Engine, Web Application Security Testing with Burp Suite, IT Fundamentals for Cybersecurity, Google IT Support.}
+      \resumeEducationCoursework{Relevant Coursework}{Data Structures and Algorithms, Relational Database Management Systems, Operating Systems, Computer Networks, Software Testing, Cryptography and Security.}
+      \resumeEducationCertifications{Certifications}{Certified Ethical Hacker (EC Council), Google Project Management Specialization, Networking in Google Cloud, Architecting with Google Kubernetes Engine, Web Application Security Testing with Burp Suite, IT Fundamentals for Cybersecurity, Google IT Support.}
   \resumeSubHeadingListEnd
 
 %--------SKILLS------------
@@ -146,10 +127,10 @@
    \item{
      \textbf{Programming Languages}{: Python, SQL, Java} \\
      \textbf{Data Engineering}{: Spark, Apache Kafka, Databricks, Airflow, dbt, Delta Lake, ETL/ELT, Data Modeling} \\
-     \textbf{Databases \& Warehouses}{: PostgreSQL, Google BigQuery, Snowflake} \\
-     \textbf{Analytics \& Visualization}{: Power BI, Tableau, Looker Studio, Metabase} \\
-     \textbf{Cloud \& Infrastructure}{: AWS (EC2, S3, Lambda, API Gateway, DynamoDB, RDS, IAM, ALB, Elastic Beanstalk, CodePipeline), Azure, GCP} \\
-     \textbf{DevOps \& Artificial Intelligence}{: Docker, Kubernetes, Git/GitHub, LLM Applications, Prompt Engineering}
+     \textbf{Databases and Warehouses}{: PostgreSQL, Google BigQuery, Snowflake} \\
+     \textbf{Analytics and Visualization}{: Power BI, Tableau, Looker Studio, Metabase} \\
+     \textbf{Cloud and Infrastructure}{: AWS (EC2, S3, Lambda, API Gateway, DynamoDB, RDS, IAM, ALB, Elastic Beanstalk, CodePipeline), Azure, GCP} \\
+     \textbf{DevOps and Artificial Intelligence}{: Docker, Kubernetes, Git/GitHub, LLM Applications, Prompt Engineering}
    }
  \resumeSubHeadingListEnd
 
@@ -173,7 +154,7 @@
         \item {Unified independent workstreams into a consolidated tracking system via BigQuery and Metabase Dashboards, reducing duplicate investigations by $\sim$35\% and saving 20+ agent hours weekly.}
         \item {Pioneered a SQL-based fraud detection workflow using Metabase and Retool, which reduced fraudulent recruiter activity by $\sim$20\% within one month and enhanced platform security.}
         \item {Developed a user data extraction pipeline using SQL, Python, Postman, and leveraging Government of India APIs, halving processing time for Operations agents.}
-        \item {Partnered cross-functionally with Operations, Trust \& Safety, Product, and Business stakeholders to optimize workflows and drive measurable process improvements.}
+        \item {Partnered cross-functionally with Operations, Trust and Safety, Product, and Business stakeholders to optimize workflows and drive measurable process improvements.}
         \item {Built new User Verification Workflows that reduced sign-up drop-offs by $\sim$10\% and improved onboarding conversion.}
       \resumeItemListEnd
 
@@ -210,12 +191,6 @@
         \item {Developed predictive models using XGBoost, Random Forest, and LSTM, and deployed results through an LLM-powered analytics chatbot for real-time mobility insights.}
       \resumeItemListEnd
 
-    % \resumeProjectHeading
-    %   {MarketMetrics}{Data Engineering, ETL, Financial Analytics}
-    %   \resumeItemListStart
-    %     \item {Engineered a data pipeline using YFinance API to fetch real-time equity data; deployed an interactive dashboard to visualize portfolio risk metrics like VaR and Sharpe ratio.}
-    %   \resumeItemListEnd
-
     \resumeProjectHeadingLinks
       {https://github.com/pratyushagarwal22/F1_Projects}
       {F1 Race Data Engineering Pipeline}
@@ -228,44 +203,11 @@
 
   \resumeSubHeadingListEnd
 
-% %-----------PROJECTS-----------------
-% \section{Projects}
-%   \resumeSubHeadingListStart
-    
-%     \resumeProjectHeading
-%       {TickerSense}{Financial Research, Full-Stack Development, LLM Integration}
-%       \resumeItemListStart
-%         \item {Built a company intelligence platform that reduces fragmented public-market research by bringing SEC filings (10-K, 10-Q, 8-K, etc), company fundamentals, charts, governance disclosures, and AI-guided exploration into one interface.}
-%         \item {Developed a conversational research assistant that helps users investigate company performance and disclosure changes without providing investment recommendations, keeping official filings as the source of truth. With exportable PDF reports to support faster, evidence-based company analysis.}
-%       \resumeItemListEnd
-    
-%     \resumeProjectHeading
-%       {TripTok}{Data Engineering, Machine Learning, LLM Integration}
-%       \resumeItemListStart
-%         \item {Built an end-to-end data pipeline processing 25GB+ of NYC Taxi data using PySpark and AWS S3, generating curated datasets and ML models for fare prediction and demand forecasting.}
-%         \item {Developed predictive models using XGBoost, Random Forest, and LSTM, and deployed results through an LLM-powered analytics chatbot for real-time mobility insights.}
-%       \resumeItemListEnd
-
-    % \resumeProjectHeading
-    %   {MarketMetrics}{Data Engineering, ETL, Financial Analytics}
-    %   \resumeItemListStart
-    %     \item {Engineered a data pipeline using YFinance API to fetch real-time equity data; deployed an interactive dashboard to visualize portfolio risk metrics like VaR and Sharpe ratio.}
-    %   \resumeItemListEnd
-
-  %   \resumeProjectHeading
-  %     {F1 Race Data Engineering Pipeline}{Data Engineering, ETL, Sports Analytics}
-  %     \resumeItemListStart
-  %       \item {Built an end-to-end Formula 1 race weekend data pipeline using FastF1, Python, pandas, and SQLAlchemy to ingest, clean, and structure session, lap, telemetry, and pit stop data.}
-  %       \item {Generated analytics-ready datasets to support driver performance analysis, race insights, and downstream dashboarding.}
-  %     \resumeItemListEnd
-
-  % \resumeSubHeadingListEnd
-
 %-----------RESEARCH-----------------
 \section{Research}
   \resumeSubHeadingListStart
     \resumeResearchHeading
-    {\href{https://www.sciencedirect.com/science/article/pii/S2667345224000051?via\%3Dihub}{Neural Network Inspired Efficient Scalable Task Scheduling for Cloud Infrastructure}}
+    {\href{https://www.sciencedirect.com/science/article/pii/S2667345224000051}{Neural Network Inspired Efficient Scalable Task Scheduling for Cloud Infrastructure}}
 {Elsevier}
         \resumeItemListStart
             \item {Proposed an ANN-inspired task scheduling algorithm for cloud infrastructure, achieving constant-time prediction performance and improved scalability under increasing task loads.}

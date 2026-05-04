@@ -119,7 +119,7 @@ Sección de **gaps** con estrategia de mitigación para cada uno:
 
 Usar WebSearch para salarios actuales (Glassdoor, Levels.fyi, Blind), reputación comp de la empresa, tendencia demanda. Tabla con datos y fuentes citadas. Si no hay datos, decirlo.
 
-Score de comp (1-5): 5=top quartile, 4=above market, 3=median, 2=slightly below, 1=well below.
+Score de comp (0-10): 10=top quartile, 8=above market, 6=median, 4=slightly below, 2=well below.
 
 #### Bloque E — Plan de Personalización
 
@@ -158,12 +158,12 @@ Analyze posting signals to assess whether this is a real, active opening.
 
 | Dimensión | Score |
 |-----------|-------|
-| Match con CV | X/5 |
-| Alineación North Star | X/5 |
-| Comp | X/5 |
-| Señales culturales | X/5 |
+| Match con CV | X/10 |
+| Alineación North Star | X/10 |
+| Comp | X/10 |
+| Señales culturales | X/10 |
 | Red flags | -X (si hay) |
-| **Global** | **X/5** |
+| **Global** | **X/10** |
 
 ### Paso 3 — Guardar Report .md
 
@@ -181,7 +181,7 @@ Donde `{company-slug}` es el nombre de empresa en lowercase, sin espacios, con g
 
 **Fecha:** {{DATE}}
 **Arquetipo:** {detectado}
-**Score:** {X/5}
+**Score:** {X/10}
 **Legitimacy:** {High Confidence | Proceed with Caution | Suspicious}
 **URL:** {URL de la oferta original}
 **PDF:** career-ops/output/cv-candidate-{company-slug}-{{DATE}}.pdf
@@ -299,7 +299,7 @@ batch/tracker-additions/{{ID}}.tsv
 
 Formato TSV (una sola línea, sin header, 9 columnas tab-separated):
 ```
-{next_num}\t{{DATE}}\t{empresa}\t{rol}\t{status}\t{score}/5\t{pdf_emoji}\t[{{REPORT_NUM}}](reports/{{REPORT_NUM}}-{company-slug}-{{DATE}}.md)\t{nota_1_frase}
+{next_num}\t{{DATE}}\t{empresa}\t{rol}\t{status}\t{score}/10\t{pdf_emoji}\t[{{REPORT_NUM}}](reports/{{REPORT_NUM}}-{company-slug}-{{DATE}}.md)\t{nota_1_frase}
 ```
 
 **Columnas TSV (orden exacto):**
@@ -311,7 +311,7 @@ Formato TSV (una sola línea, sin header, 9 columnas tab-separated):
 | 3 | company | string | `Datadog` | Nombre corto de empresa |
 | 4 | role | string | `Staff AI Engineer` | Título del rol |
 | 5 | status | canonical | `Evaluada` | DEBE ser canónico (ver states.yml) |
-| 6 | score | X.XX/5 | `4.55/5` | O `N/A` si no evaluable |
+| 6 | score | X.XX/10 | `9.10/10` | O `N/A` si no evaluable |
 | 7 | pdf | emoji | `✅` o `❌` | Si se generó PDF |
 | 8 | report | md link | `[647](reports/647-...)` | Link al report |
 | 9 | notes | string | `APPLY HIGH...` | Resumen 1 frase |

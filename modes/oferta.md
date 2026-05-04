@@ -161,7 +161,7 @@ Guardar evaluación completa en `reports/{###}-{company-slug}-{YYYY-MM-DD}.md`.
 
 **Fecha:** {YYYY-MM-DD}
 **Arquetipo:** {detectado}
-**Score:** {X/5}
+**Score:** {X/10}
 **Legitimacy:** {High Confidence | Proceed with Caution | Suspicious}
 **PDF:** {ruta o pendiente}
 
@@ -189,7 +189,7 @@ Guardar evaluación completa en `reports/{###}-{company-slug}-{YYYY-MM-DD}.md`.
 (contenido completo del bloque G)
 
 ## H) Draft Application Answers
-(solo si score >= 4.5 — borradores de respuestas para el formulario de aplicación)
+(solo si score >= 9.0 — borradores de respuestas para el formulario de aplicación)
 
 ---
 
@@ -204,7 +204,7 @@ Guardar evaluación completa en `reports/{###}-{company-slug}-{YYYY-MM-DD}.md`.
 - Fecha actual
 - Empresa
 - Rol
-- Score: promedio de match (1-5)
+- Score: promedio de match (0-10)
 - Estado: `Evaluada`
 - PDF: ❌ (o ✅ si auto-pipeline generó PDF)
 - Report: link relativo al report .md (ej: `[001](reports/001-company-2026-01-01.md)`)

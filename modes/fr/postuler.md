@@ -80,7 +80,7 @@ Pour chaque question, construire la reponse selon ce schema :
 ```
 ## Reponses pour [Entreprise] -- [Role]
 
-Base : Report #NNN | Score : X.X/5 | Archetype : [type]
+Base : Report #NNN | Score : X.X/10 | Archetype : [type]
 
 ---
 

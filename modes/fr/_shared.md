@@ -153,8 +153,8 @@ Dans les offres et negociations francophones, certains termes n'existent pas sur
 - Champs libres : indiquer le chevauchement horaire et la disponibilite explicitement
 
 **Dans les evaluations (scoring) :**
-- Dimension remote pour du hybride hors de ton pays : Score **3.0** (pas 1.0)
-- Score 1.0 uniquement si l'offre dit explicitement "presence obligatoire 4-5 jours/semaine, aucune exception"
+- Dimension remote pour du hybride hors de ton pays : Score **6.0** (pas 2.0)
+- Score 2.0 uniquement si l'offre dit explicitement "presence obligatoire 4-5 jours/semaine, aucune exception"
 
 ### Priorite time-to-offer
 - Demo fonctionnelle + metriques > perfection

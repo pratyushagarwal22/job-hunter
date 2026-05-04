@@ -203,7 +203,7 @@ IMPORTANT OPERATING RULES FOR THIS CLI SESSION
 ---SCORE_SUMMARY---
 COMPANY: <company name or "Unknown">
 ROLE: <role title>
-SCORE: <global score as decimal, e.g. 3.8>
+SCORE: <global score as decimal on a 0-10 scale, e.g. 7.6>
 ARCHETYPE: <detected archetype>
 LEGITIMACY: <High Confidence | Proceed with Caution | Suspicious>
 ---END_SUMMARY---
@@ -293,7 +293,7 @@ if (saveReport) {
 
 **Date:** ${today}
 **Archetype:** ${archetype}
-**Score:** ${score}/5
+**Score:** ${score}/10
 **Legitimacy:** ${legitimacy}
 **PDF:** pending
 **Tool:** Gemini (${modelName})
@@ -315,5 +315,5 @@ ${evaluationText.replace(/---SCORE_SUMMARY---[\s\S]*?---END_SUMMARY---/, '').tri
 }
 
 console.log('\n' + '─'.repeat(66));
-console.log(`  Score: ${score}/5  |  Archetype: ${archetype}  |  Legitimacy: ${legitimacy}`);
+console.log(`  Score: ${score}/10  |  Archetype: ${archetype}  |  Legitimacy: ${legitimacy}`);
 console.log('─'.repeat(66) + '\n');

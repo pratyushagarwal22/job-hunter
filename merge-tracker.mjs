@@ -184,8 +184,8 @@ function parseTsvContent(content, filename) {
     // Heuristic: if col4 looks like a score and col5 looks like a status, they're swapped
     const col4 = parts[4].trim();
     const col5 = parts[5].trim();
-    const col4LooksLikeScore = /^\d+\.?\d*\/5$/.test(col4) || col4 === 'N/A' || col4 === 'DUP';
-    const col5LooksLikeScore = /^\d+\.?\d*\/5$/.test(col5) || col5 === 'N/A' || col5 === 'DUP';
+    const col4LooksLikeScore = /^\d+\.?\d*\/10$/.test(col4) || col4 === 'N/A' || col4 === 'DUP';
+    const col5LooksLikeScore = /^\d+\.?\d*\/10$/.test(col5) || col5 === 'N/A' || col5 === 'DUP';
     const col4LooksLikeStatus = /^(evaluated|applied|responded|interview|offer|rejected|discarded|skip|evaluada|aplicado|respondido|entrevista|oferta|rechazado|descartado|no aplicar|cerrada|duplicado|repost|condicional|hold|monitor)/i.test(col4);
     const col5LooksLikeStatus = /^(evaluated|applied|responded|interview|offer|rejected|discarded|skip|evaluada|aplicado|respondido|entrevista|oferta|rechazado|descartado|no aplicar|cerrada|duplicado|repost|condicional|hold|monitor)/i.test(col5);
 

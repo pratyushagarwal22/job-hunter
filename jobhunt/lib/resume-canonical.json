@@ -1,0 +1,79 @@
+{
+  "experience": [
+    {
+      "id": "kohler",
+      "line1": "{Kohler Co. [Digital Transformation Team]}{Jun 2025 -- May 2026}",
+      "line2": "{Data Engineer Intern}{Champaign, IL}"
+    },
+    {
+      "id": "apna",
+      "line1": "{Apna [Trust and Safety Team]}{Oct 2022 -- Aug 2024}",
+      "line2": "{Data Analyst}{Bangalore, India}"
+    },
+    {
+      "id": "google",
+      "line1": "{Google [Channel Sales Activation Team]}{Oct 2021 -- Apr 2022}",
+      "line2": "{Strategy and Analytics Intern}{Singapore}"
+    }
+  ],
+  "projects": [
+    {
+      "id": "tickersense",
+      "primaryUrl": "https://project-tickersense.vercel.app/",
+      "title": "TickerSense",
+      "defaultTags": "Financial Research, Full-Stack Development, LLM Integration",
+      "githubUrl": "https://github.com/pratyushagarwal22/tickersense"
+    },
+    {
+      "id": "triptok",
+      "primaryUrl": "https://github.com/pratyushagarwal22/TripTok",
+      "title": "TripTok",
+      "defaultTags": "Data Engineering, Machine Learning, LLM Integration",
+      "githubUrl": "https://github.com/pratyushagarwal22/TripTok"
+    },
+    {
+      "id": "f1",
+      "primaryUrl": "https://github.com/pratyushagarwal22/F1_Projects",
+      "title": "F1 Race Data Engineering Pipeline",
+      "defaultTags": "Data Engineering, ETL, Sports Analytics",
+      "githubUrl": "https://github.com/pratyushagarwal22/F1_Projects"
+    }
+  ],
+  "research": [
+    {
+      "id": "sciencedirect",
+      "paperUrl": "https://www.sciencedirect.com/science/article/pii/S2667345224000051",
+      "paperTitle": "Neural Network Inspired Efficient Scalable Task Scheduling for Cloud Infrastructure",
+      "venue": "Elsevier"
+    },
+    {
+      "id": "ieee",
+      "paperUrl": "https://ieeexplore.ieee.org/abstract/document/10444593",
+      "paperTitle": "Fog and Edge Computing Issues and Challenges -- A Review",
+      "venue": "IEEE"
+    },
+    {
+      "id": "springer",
+      "paperUrl": "https://link.springer.com/chapter/10.1007/978-3-031-08815-5_11",
+      "paperTitle": "Neural Network Based Task Scheduling in Cloud Using Harmony Search Algorithm",
+      "venue": "Springer"
+    }
+  ],
+  "extracurricular": [
+    {
+      "id": "microsoft-learner",
+      "line1": "{Microsoft}{Jan 2020 -- May 2021}",
+      "line2": "{Microsoft Learn Student Ambassador}{}"
+    },
+    {
+      "id": "muj-promotions",
+      "line1": "{MUJ ACM Student Chapter}{Aug 2019 -- May 2020}",
+      "line2": "{Head of Promotions}{}"
+    },
+    {
+      "id": "muj-mentor",
+      "line1": "{MUJ ACM Student Chapter}{Aug 2019 -- May 2020}",
+      "line2": "{Student Mentor}{}"
+    }
+  ]
+}

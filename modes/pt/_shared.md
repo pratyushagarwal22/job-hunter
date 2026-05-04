@@ -25,22 +25,22 @@
 
 ## Sistema de Pontuação
 
-A avaliação usa 6 blocos (A-F) com uma nota global de 1-5:
+A avaliação usa 6 blocos (A-F) com uma **nota global em escala 0-10**:
 
 | Dimensão | O que mede |
 |----------|------------|
 | Match com CV | Habilidades, experiência, alinhamento de proof points |
 | Alinhamento North Star | Quão bem a vaga encaixa nos arquétipos-alvo do usuário (de `_profile.md`) |
-| Remuneração | Salário vs mercado (5=quartil superior, 1=bem abaixo) |
+| Remuneração | Salário vs mercado (10=quartil superior, 0=bem abaixo) |
 | Sinais culturais | Cultura da empresa, crescimento, estabilidade, política de trabalho remoto |
 | Red flags | Bloqueadores, alertas (ajustes negativos) |
 | **Global** | Média ponderada dos itens acima |
 
 **Interpretação da nota:**
-- 4.5+ → Match forte, recomendado aplicar imediatamente
-- 4.0-4.4 → Bom match, vale a pena aplicar
-- 3.5-3.9 → Razoável mas não ideal, aplicar apenas se houver motivo específico
-- Abaixo de 3.5 → Recomendado não aplicar (veja Ethical Use no CLAUDE.md)
+- 9.0+ → Match forte, recomendado aplicar imediatamente
+- 8.0-8.9 → Bom match, vale a pena aplicar
+- 7.0-7.9 → Razoável mas não ideal, aplicar apenas se houver motivo específico
+- Abaixo de 7.0 → Recomendado não aplicar (veja Ethical Use no CLAUDE.md)
 
 ## North Star -- Vagas-Alvo
 
@@ -166,8 +166,8 @@ Em vagas e negociações brasileiras, existem termos e práticas que não aparec
 - Em campos de texto livre: informar fuso horário e disponibilidade explicitamente
 
 **Em avaliações (Scoring):**
-- Dimensão remoto em híbrido fora do seu estado/país: Score **3.0** (não 1.0)
-- Score 1.0 apenas se a vaga diz explicitamente "deve estar presencial 4-5 dias/semana, sem exceções"
+- Dimensão remoto em híbrido fora do seu estado/país: Score **6.0** (não 2.0)
+- Score 2.0 apenas se a vaga diz explicitamente "deve estar presencial 4-5 dias/semana, sem exceções"
 
 ### Prioridade Time-to-Offer
 - Demo funcional + métricas > perfeição

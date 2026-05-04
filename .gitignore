@@ -42,3 +42,7 @@ bun.lock
 .claude/memory/
 career-dashboard
 package-lock.json
+
+# Local AI URL batch (never commit real job links)
+jobhunt/ai-test/urls.txt
+jobhunt/ai-test/output/
