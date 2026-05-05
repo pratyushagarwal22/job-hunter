@@ -1,12 +1,62 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import yaml from 'js-yaml';
 import { resolveAnthropicModel } from '../../integrations/anthropic/config.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /** Target length for sheet resume summary in the model prompt only; not enforced in code. */
 const SUMMARY_CHAR_GUIDE = 350;
+
+/**
+ * Parse the `candidate` block out of a raw `profile.yml` string and return the
+ * fields used by the deterministic email signature. Robust to malformed YAML
+ * (returns an empty object) so a missing field never breaks Stage 2.
+ */
+export function parseCandidateFromProfileYaml(yamlText) {
+  if (!yamlText) return {};
+  try {
+    const doc = yaml.load(yamlText);
+    const cand = (doc && typeof doc === 'object' && doc.candidate) || {};
+    return {
+      full_name: typeof cand.full_name === 'string' ? cand.full_name.trim() : '',
+      phone: typeof cand.phone === 'string' ? cand.phone.trim() : '',
+      linkedin: typeof cand.linkedin === 'string' ? cand.linkedin.trim() : '',
+      email: typeof cand.email === 'string' ? cand.email.trim() : '',
+    };
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Build the canonical closing block that every Stage 2 / Stage 3 email ends
+ * with. Order is fixed: full name, phone, LinkedIn URL, email. Missing fields
+ * are skipped silently.
+ */
+export function buildEmailSignatureBlock(candidate) {
+  const lines = ['Best regards,', ''];
+  if (candidate?.full_name) lines.push(candidate.full_name);
+  if (candidate?.phone) lines.push(candidate.phone);
+  if (candidate?.linkedin) lines.push(candidate.linkedin);
+  if (candidate?.email) lines.push(candidate.email);
+  return lines.join('\n');
+}
+
+const CLOSING_KEYWORDS_RE =
+  /\n+[ \t]*(?:Best regards|Best wishes|Kind regards|Warmest regards|Warm regards|Sincerely yours|Yours sincerely|Yours truly|Sincerely|Regards|Best|Cheers)\b[\s\S]*$/i;
+
+/**
+ * Strip whatever closing/signature block Claude produced (from the first
+ * "Best regards"/"Sincerely"/etc. through end of body) and append a
+ * deterministic signature built from `profile.yml`. Idempotent.
+ */
+export function applyDeterministicEmailSignature(body, candidate) {
+  const stripped = String(body || '').replace(CLOSING_KEYWORDS_RE, '').trimEnd();
+  const sig = buildEmailSignatureBlock(candidate || {});
+  return `${stripped}\n\n${sig}\n`;
+}
 
 function loadCanonical() {
   return JSON.parse(readFileSync(join(__dirname, 'resume-canonical.json'), 'utf-8'));
@@ -427,8 +477,11 @@ Do not include bracketed placeholders. No subject line.`;
 
 export async function generateOutreachEmail(client, { company, role, jdText, context }) {
   const model = resolveAnthropicModel('outreach');
+  const candidate = parseCandidateFromProfileYaml(context?.profile || '');
+  const signaturePreview = buildEmailSignatureBlock(candidate);
+
   const system = `You draft a GENERAL outreach email for the ${role} role at ${company} — addressed to the team, not to a specific person. Reply with a STRICT JSON object only (no markdown), keys:
-- subject: one line, professional (e.g. "Interest in ${role} — Pratyush Agarwal"). Do NOT include a recipient name.
+- subject: one line, professional (e.g. "Interest in ${role} — ${candidate.full_name || 'the candidate'}"). Do NOT include a recipient name.
 - body: plain text email body that MUST include:
   • Opening salutation that does NOT name a specific person — use "Dear ${company} Hiring Team," or "Dear [Team] Hiring Team," or "Hello," if uncertain. Never invent a recipient name.
   • Blank line
@@ -436,9 +489,11 @@ export async function generateOutreachEmail(client, { company, role, jdText, con
   • Blank line
   • Gratitude line (e.g. "Thank you for your time and consideration.")
   • Blank line
-  • Closing "Best regards," then blank line then the candidate's full name on its own line
-  • Optional final line with email from profile
-Use only factual content from the candidate materials. No emojis.`;
+  • Closing block — write EXACTLY this, on its own lines, as the final lines of the body (no extra text after it):
+
+${signaturePreview}
+
+Use only factual content from the candidate materials. No emojis. Do NOT add any text after the email line above. Do NOT hyperlink the LinkedIn URL — leave it as plain text.`;
 
   const user = `Company: ${company}\nRole: ${role}\n\n--- JD ---\n${jdText}\n\n--- profile ---\n${context.profile}\n\n--- cv ---\n${context.cv}`;
 
@@ -454,7 +509,9 @@ Use only factual content from the candidate materials. No emojis.`;
   if (!parsed || typeof parsed.subject !== 'string' || typeof parsed.body !== 'string') {
     throw new Error(`Outreach model did not return JSON with subject+body. Got: ${raw.slice(0, 500)}`);
   }
-  return { model, subject: parsed.subject.trim(), body: parsed.body.trim() };
+  const subject = parsed.subject.trim();
+  const body = applyDeterministicEmailSignature(parsed.body, candidate);
+  return { model, subject, body };
 }
 
 export async function generateLinkedInInvite(client, { company, role, jdText, context }) {
