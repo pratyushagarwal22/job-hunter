@@ -19,6 +19,7 @@ import { loadDotenv, requireEnv } from '../../integrations/google/env.mjs';
 import { getSheetsClient } from '../../integrations/google/auth.mjs';
 import { normalizeGoogleSheetId } from '../../integrations/google/env.mjs';
 import { parseDriveFileId, exportFileUtf8 } from '../../integrations/google/drive.mjs';
+import { withGoogleApi } from '../../integrations/google/rate-limit.mjs';
 
 await loadDotenv();
 
@@ -26,7 +27,9 @@ const N = Math.max(1, Math.min(25, Number(process.argv[2] || 10)));
 const sheets = await getSheetsClient();
 const spreadsheetId = normalizeGoogleSheetId(requireEnv('GOOGLE_SHEET_ID'));
 
-const res = await sheets.spreadsheets.values.get({ spreadsheetId, range: 'ASSETS!A1:N2000' });
+const res = await withGoogleApi('sheetsRead', () =>
+  sheets.spreadsheets.values.get({ spreadsheetId, range: 'ASSETS!A1:N2000' })
+);
 const rows = res.data.values || [];
 if (rows.length <= 1) {
   console.log(JSON.stringify({ ok: true, note: 'No ASSETS rows' }, null, 2));

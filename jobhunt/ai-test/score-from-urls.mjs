@@ -20,6 +20,7 @@ import process from 'node:process';
 
 import { loadDotenv } from '../../integrations/google/env.mjs';
 import { createAnthropicClient, resolveAnthropicModel } from '../../integrations/anthropic/config.mjs';
+import { extractJsonObject } from '../lib/claude-json.mjs';
 import { fetchJobPagePlainText } from './fetch-job-page-text.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -49,27 +50,6 @@ function loadCvSnippet() {
   if (!existsSync(p)) return '(cv.md not found)';
   const body = readFileSync(p, 'utf-8');
   return body.length > 12_000 ? body.slice(0, 12_000) + '\n…[truncated]' : body;
-}
-
-/** If the model wraps JSON in a markdown fence, strip it only; otherwise unchanged. */
-function stripMarkdownCodeFence(s) {
-  let t = String(s || '').trim();
-  if (t.startsWith('```')) {
-    t = t.replace(/^```(?:json|plaintext|text)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
-  }
-  return t;
-}
-
-function extractJsonObject(text) {
-  const s = stripMarkdownCodeFence(text);
-  const start = s.indexOf('{');
-  const end = s.lastIndexOf('}');
-  if (start === -1 || end <= start) return null;
-  try {
-    return JSON.parse(s.slice(start, end + 1));
-  } catch {
-    return null;
-  }
 }
 
 const SCORING_RULES_SWE = `

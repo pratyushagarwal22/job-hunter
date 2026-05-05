@@ -100,6 +100,75 @@ After changing **`config/profile.yml`** (e.g. SWE scoring rules), re-run **`npm 
 2. In the sheet, set **`SHORTLIST.pursue`** as needed.
 3. `npm run jobhunt:stage2` — requires **`ANTHROPIC_API_KEY`**; downloads each **JD** from Drive, then Claude generates **`.tex` resume**, formatted **cover letter**, and **outreach email** (subject + body with salutation/closing) + **LinkedIn invite** snippet. Compile **`.tex`** locally (see `templates/cv-template.tex`). Review all copy before sending.
 
+> **JSON parsing of Claude responses (scoring + Stage 2 assets)** is centralized
+> in **`jobhunt/lib/claude-json.mjs`**. See [Claude JSON contract](#claude-json-contract)
+> below for the contract, failure modes, and how to extend it for Stage 1.
+
+## Claude JSON contract
+
+Every Claude prompt in this repo that expects a structured response (the
+URL scorer, Stage 2 resume / outreach / LinkedIn generators, and the future
+**Stage 1** that will replace `ai-score-urls` + `ai-sync-sheets` with a
+direct `portals.yml → INBOX_RAW/SHORTLIST` ingest) instructs the model to
+emit **a single JSON object** as its reply. The model's actual output, in
+practice, can still arrive in any of these shapes:
+
+- bare object: `{"match_score": 6.5, ...}`
+- fenced object: ```` ```json\n{...}\n``` ````
+- object surrounded by prose: `Sure! {...} hope this helps.`
+- object whose string values contain `}`, `\"`, or other punctuation that
+  used to confuse the old `indexOf('{') ... lastIndexOf('}')` slicer.
+
+### The single shared parser
+
+All callers MUST go through **[`jobhunt/lib/claude-json.mjs`](lib/claude-json.mjs)**:
+
+- `extractJsonObject(text)` — fence-strips, then walks the input one `{`
+  at a time, tracking brace depth while honoring string literals and
+  `\\` / `\"` escapes. Returns the first balanced + `JSON.parse`-able
+  object, or `null`.
+- `stripMarkdownCodeFence(text)` — removes a leading ``` ```/```json/```text/```plaintext ```
+  fence and matching trailing fence; idempotent on unfenced input.
+
+Current consumers:
+
+- [`jobhunt/ai-test/score-from-urls.mjs`](ai-test/score-from-urls.mjs) (URL scorer)
+- [`jobhunt/lib/claude-asset-generators.mjs`](lib/claude-asset-generators.mjs)
+  — Stage 2 resume, outreach email, and LinkedIn invite generators
+
+**Stage 1** (the planned `portals.yml`-driven ingestion that supersedes
+`ai-score-urls` / `ai-sync-sheets`) will reuse this same util — do not
+re-introduce a local copy. If a new caller needs additional tolerance
+(e.g. JSON arrays at the top level), add it here, not in the caller.
+
+### Failure-mode contract
+
+| Input                                              | `extractJsonObject` returns | Caller responsibility |
+| -------------------------------------------------- | --------------------------- | --------------------- |
+| Markdown-fenced object (with or without `json` tag) | parsed object               | use as-is             |
+| Object preceded or followed by prose                | parsed object               | use as-is             |
+| Object whose string value contains `}` or escaped quotes | parsed object         | use as-is             |
+| Truncated mid-string output (no balanced closing brace) | `null`                  | surface `ok:false` so the row is skipped on sync |
+| Genuinely malformed JSON (unquoted keys, trailing commas) | `null`                | surface `ok:false`    |
+| Empty / `null` / `undefined`                       | `null`                      | surface `ok:false`    |
+
+Production callers must treat a `null` return as a hard failure for that
+row and record it on the report (the URL scorer already does this; do not
+silently default-score).
+
+### Tests
+
+[`scripts/diagnostics/claude-json-smoke.mjs`](../scripts/diagnostics/claude-json-smoke.mjs)
+covers the cases above plus nested objects and the original Palo Alto
+fenced shape. Run from `career-ops/`:
+
+```bash
+node scripts/diagnostics/claude-json-smoke.mjs
+```
+
+Exit 0 = all fixtures pass. Add a new fixture here whenever a real Claude
+response surfaces a parsing edge case.
+
 ## Stage 3 — Apollo enrich-only contact discovery
 
 `npm run jobhunt:stage3` runs **after** Stage 2 has generated `ASSETS` for the
@@ -279,6 +348,64 @@ The script prints a single JSON `report` to stdout (also written to
 `cleanup-test-data.mjs` already clears both `CONTACTS` and `CONTACTS_MASTER`,
 so the canonical end-to-end test still resets cleanly. The dumps under
 `data/stage3/` are kept on purpose so the discovered contacts aren't lost.
+
+## Google Sheets/Drive throughput
+
+Every Sheets/Drive call in this project routes through
+`integrations/google/rate-limit.mjs`, which provides:
+
+1. A **per-lane token bucket** (`sheetsRead`, `sheetsWrite`, `drive`) that
+   paces dispatch under Google's 60/min user quotas (Sheets) and the
+   1M-quota-units/min Drive cap.
+2. **Exponential backoff with jitter** on transient errors (`429`, `5xx`,
+   and `403` responses with rate/quota wording in `errors[].reason` or the
+   message body).
+3. **Process counters** exposed via `getGoogleApiMetrics()`. Every stage
+   report (`stage2`, `stage3`, `bootstrap`, `cleanup`,
+   `ai-test/sync-report-to-command-center`) attaches:
+
+   ```json
+   "google_api_metrics": {
+     "config":   { "qps": {...}, "burst": {...} },
+     "counters": {
+       "sheetsRead":  { "calls": 4,   "retries": 0, "last_status": 200 },
+       "sheetsWrite": { "calls": 86,  "retries": 1, "last_status": 200 },
+       "drive":       { "calls": 252, "retries": 0, "last_status": 200 }
+     }
+   }
+   ```
+
+   For Stage 3 it's also persisted in `data/stage3/<runId>/run-summary.json`.
+
+### Tunables (all optional, defaults are safe)
+
+| env | default | meaning |
+| --- | ---: | --- |
+| `JOBHUNT_GOOGLE_SHEETS_QPS` | `0.83` | tokens/sec for both `sheetsRead` and `sheetsWrite` lanes (≈ 50/min) |
+| `JOBHUNT_GOOGLE_DRIVE_QPS` | `3.33` | tokens/sec for the `drive` lane (≈ 200/min) |
+| `JOBHUNT_GOOGLE_SHEETS_BURST` | `10` | bucket capacity for Sheets lanes |
+| `JOBHUNT_GOOGLE_DRIVE_BURST` | `30` | bucket capacity for Drive lane |
+| `JOBHUNT_GOOGLE_RETRY_MAX_ATTEMPTS` | `5` | retries per call before giving up |
+| `JOBHUNT_GOOGLE_RETRY_BASE_MS` | `1000` | first backoff delay |
+| `JOBHUNT_GOOGLE_RETRY_MAX_MS` | `32000` | maximum backoff delay |
+
+Raise QPS only after a real run shows `retries: 0` for the lane in
+question. Lower QPS if you see retries climbing or `last_status: 429`.
+
+### Stage 3 batching
+
+Stage 3 batches Sheets writes per-job using `appendRows('CONTACTS', ...)`,
+`appendRows('CONTACTS_MASTER', ...)`, and `updateRanges([...], 'RAW')` so
+each job costs at most 3 Sheets writes (instead of ~2 per contact). At
+~80 contacts × 40 PURSUE jobs that's ~6,400 → ~120 sheets writes per run.
+
+### Drive folder cache
+
+`integrations/google/drive.mjs` keeps a process-scoped `Map` keyed on
+`${parentId}|${name}` so repeated `ensureFolderPath(...)` calls (Stage 2
+buckets, Stage 3 per-contact email folders) don't re-issue `files.list`
+for the same company / job folders. The cache is process-local and
+disappears when the run ends.
 
 ## Quick debugging checklist
 

@@ -17,7 +17,7 @@
  * any difference between bulk and single is plan-related vs id-key-related.
  *
  * Usage:
- *   node scripts/apollo-bulkmatch-diag.mjs <path/to/<job_id>-search.json> [count]
+ *   node scripts/diagnostics/apollo-bulkmatch-diag.mjs <path/to/<job_id>-search.json> [count]
  *
  * Output:
  *   data/stage3/diag-bulkmatch-by-id-<ts>.json   (full per-id breakdown)
@@ -30,8 +30,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { loadDotenv, requireEnv } from '../integrations/google/env.mjs';
-import { bulkMatchPeople } from '../integrations/apollo/client.mjs';
+import { loadDotenv, requireEnv } from '../../integrations/google/env.mjs';
+import { bulkMatchPeople } from '../../integrations/apollo/client.mjs';
 
 await loadDotenv();
 const APOLLO_API_KEY = requireEnv('APOLLO_API_KEY');
@@ -79,7 +79,7 @@ const REPO_ROOT = resolve(dirname(__filename), '..');
 const args = process.argv.slice(2);
 if (args.length === 0) {
   console.error(
-    'Usage: node scripts/apollo-bulkmatch-diag.mjs <path/to/<job_id>-search.json> [count]'
+    'Usage: node scripts/diagnostics/apollo-bulkmatch-diag.mjs <path/to/<job_id>-search.json> [count]'
   );
   process.exit(2);
 }

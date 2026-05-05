@@ -47,7 +47,8 @@ import yaml from 'js-yaml';
 
 import { loadDotenv, normalizeGoogleSheetId, requireEnv } from '../integrations/google/env.mjs';
 import { getSheetsClient } from '../integrations/google/auth.mjs';
-import { appendRow } from '../integrations/google/sheets.mjs';
+import { appendRows, updateRanges } from '../integrations/google/sheets.mjs';
+import { withGoogleApi, getGoogleApiMetrics } from '../integrations/google/rate-limit.mjs';
 import {
   getRootFolder,
   ensureSubfolders,
@@ -470,14 +471,17 @@ try {
   ensureDumpDir();
 
   /* ------------ read sheets ------------ */
-  const shortlistRes = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: 'SHORTLIST!A1:K',
-  });
+  const shortlistRes = await withGoogleApi('sheetsRead', () =>
+    sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: 'SHORTLIST!A1:K',
+    })
+  );
   const shortlistRows = shortlistRes.data.values || [];
   if (shortlistRows.length <= 1) {
     report.ok = true;
     report.note = 'No rows in SHORTLIST';
+    report.google_api_metrics = getGoogleApiMetrics();
     dumpJson('run-summary.json', report);
     console.log(JSON.stringify(report, null, 2));
     process.exit(0);
@@ -491,10 +495,12 @@ try {
     role: slHeader.indexOf('role'),
   };
 
-  const assetsRes = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: 'ASSETS!A1:N',
-  });
+  const assetsRes = await withGoogleApi('sheetsRead', () =>
+    sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: 'ASSETS!A1:N',
+    })
+  );
   const assetsRows = assetsRes.data.values || [];
   const assetsByJobId = new Map();
   if (assetsRows.length > 1) {
@@ -519,10 +525,12 @@ try {
     }
   }
 
-  const contactsRes = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: 'CONTACTS!A1:O',
-  });
+  const contactsRes = await withGoogleApi('sheetsRead', () =>
+    sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: 'CONTACTS!A1:O',
+    })
+  );
   const contactsRows = contactsRes.data.values || [];
   const existingContactsByJob = new Map(); // job_id -> Set of contact_ids
   for (let i = 1; i < contactsRows.length; i++) {
@@ -534,10 +542,12 @@ try {
     existingContactsByJob.get(jid).add(cid);
   }
 
-  const masterRes = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: 'CONTACTS_MASTER!A1:L',
-  });
+  const masterRes = await withGoogleApi('sheetsRead', () =>
+    sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: 'CONTACTS_MASTER!A1:L',
+    })
+  );
   const masterRows = masterRes.data.values || [];
   const masterByApolloId = new Map(); // apollo_person_id -> { rowIndex, contactId }
   const masterByLinkedIn = new Map(); // linkedin (lc) -> { rowIndex, contactId }
@@ -738,7 +748,7 @@ try {
 
       /* ---- bulk_match for net-new without email ----
          `mixed_people/api_search` always returns apollo_person_id but never
-         linkedin_url (confirmed empirically via scripts/apollo-bulkmatch-diag.mjs).
+         linkedin_url (confirmed empirically via scripts/diagnostics/apollo-bulkmatch-diag.mjs).
          So the gate must accept id-only survivors; the inner bulkMatchPeople
          already handles `id`. Apollo's `bulk_match` returns linkedin_url +
          email when matched by id, which we write back into the survivor so
@@ -847,6 +857,15 @@ try {
       /* ---- emit existing-master contacts straight into CONTACTS (reuse) ---- */
       const contactsRowsDump = [];
 
+      // Per-job accumulators. Sheets writes are deferred so we make at most
+      // 3 API calls per job (CONTACTS append, CONTACTS_MASTER append for
+      // creates, CONTACTS_MASTER batch update for reused last-seen) instead
+      // of ~2 per contact. At ~80 contacts × 40 PURSUE jobs that's
+      // 6,400 → 120 sheets writes.
+      const pendingContactsRows = [];
+      const pendingMasterCreates = [];
+      const pendingMasterUpdates = []; // { range, values }
+
       for (const { cand, existingMaster } of skippedExisting) {
         const contact_id = existingMaster.contactId;
         const seenForJob = existingContactsByJob.get(job_id);
@@ -873,6 +892,9 @@ try {
           masterByLinkedIn,
           masterByEmail,
           masterByContactId,
+          pendingContactsRows,
+          pendingMasterCreates,
+          pendingMasterUpdates,
         });
         if (built === 'reused') {
           report.contacts_reused++;
@@ -916,6 +938,9 @@ try {
           masterByLinkedIn,
           masterByEmail,
           masterByContactId,
+          pendingContactsRows,
+          pendingMasterCreates,
+          pendingMasterUpdates,
         });
         if (built === 'created') {
           report.contacts_created++;
@@ -924,6 +949,23 @@ try {
           report.contacts_reused++;
           jobReport.contacts_reused++;
         }
+      }
+
+      /* ---- flush per-job sheet writes in batches ---- */
+      try {
+        if (pendingContactsRows.length) {
+          await appendRows('CONTACTS', pendingContactsRows);
+        }
+        if (pendingMasterCreates.length) {
+          await appendRows('CONTACTS_MASTER', pendingMasterCreates);
+        }
+        if (pendingMasterUpdates.length) {
+          await updateRanges(pendingMasterUpdates, 'RAW');
+        }
+      } catch (flushErr) {
+        jobReport.warnings.push(
+          `Batched sheet flush failed: ${flushErr?.message || flushErr}`
+        );
       }
 
       dumpJson(`${job_id}-contacts-rows.json`, {
@@ -950,6 +992,7 @@ try {
   report.error = err?.message || String(err);
 }
 
+report.google_api_metrics = getGoogleApiMetrics();
 dumpJson('run-summary.json', report);
 console.log(JSON.stringify(report, null, 2));
 process.exit(report.ok ? 0 : 1);
@@ -1006,6 +1049,9 @@ async function buildAndAppendContact({
   masterByLinkedIn,
   masterByEmail,
   masterByContactId,
+  pendingContactsRows,
+  pendingMasterCreates,
+  pendingMasterUpdates,
 }) {
   const firstName = person.first_name || (person.name ? person.name.split(/\s+/)[0] : '') || '';
 
@@ -1053,7 +1099,7 @@ async function buildAndAppendContact({
     'NEW',
     person.apollo_person_id ? `apollo_person_id=${person.apollo_person_id}` : '',
   ];
-  await appendRow('CONTACTS', contactsRow);
+  pendingContactsRows.push(contactsRow);
   contactsRowsDump.push({
     contact_id,
     job_id,
@@ -1091,8 +1137,10 @@ async function buildAndAppendContact({
         .filter(Boolean)
         .join('; '),
     ];
-    await appendRow('CONTACTS_MASTER', masterRow);
-    // Keep dedup maps consistent for further candidates in this run.
+    pendingMasterCreates.push(masterRow);
+    // Keep dedup maps consistent for further candidates in this run. The
+    // batched flush comes after both loops, so subsequent candidates in the
+    // same job must see this contact_id as already-claimed.
     masterByContactId.set(contact_id, { rowIndex: -1 });
     if (person.apollo_person_id)
       masterByApolloId.set(person.apollo_person_id, { rowIndex: -1, contactId: contact_id });
@@ -1104,18 +1152,11 @@ async function buildAndAppendContact({
     if (person.email)
       masterByEmail.set(person.email.toLowerCase(), { rowIndex: -1, contactId: contact_id });
   } else if (existingMasterRowIndex && existingMasterRowIndex > 0) {
-    try {
-      await sheets.spreadsheets.values.update({
-        spreadsheetId,
-        range: `CONTACTS_MASTER!J${existingMasterRowIndex}:K${existingMasterRowIndex}`,
-        valueInputOption: 'RAW',
-        requestBody: { values: [[iso, job_id]] },
-      });
-    } catch (err) {
-      jobReport.warnings.push(
-        `CONTACTS_MASTER update failed for ${contact_id}: ${err?.message || err}`
-      );
-    }
+    // Queue last-seen / last-job-id update; flushed via values.batchUpdate.
+    pendingMasterUpdates.push({
+      range: `CONTACTS_MASTER!J${existingMasterRowIndex}:K${existingMasterRowIndex}`,
+      values: [[iso, job_id]],
+    });
   }
 
   /* track for further dedup in this run */

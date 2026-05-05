@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
 import { resolveAnthropicModel } from '../../integrations/anthropic/config.mjs';
+import { extractJsonObject } from './claude-json.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -68,18 +69,6 @@ function textBlocks(msg) {
     .map((b) => b.text)
     .join('')
     .trim();
-}
-
-function extractJsonObject(text) {
-  const s = String(text || '').trim();
-  const start = s.indexOf('{');
-  const end = s.lastIndexOf('}');
-  if (start === -1 || end <= start) return null;
-  try {
-    return JSON.parse(s.slice(start, end + 1));
-  } catch {
-    return null;
-  }
 }
 
 /** & → and, % and $ (currency) escapes, then a single ~ → $\\sim$ (no extra passes). */

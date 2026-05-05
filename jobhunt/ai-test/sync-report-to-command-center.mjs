@@ -23,6 +23,7 @@ import { appendRow, reapplyShortlistPursueDropdown } from '../../integrations/go
 import { getSheetsClient } from '../../integrations/google/auth.mjs';
 import { normalizeGoogleSheetId, requireEnv } from '../../integrations/google/env.mjs';
 import { getRootFolder, ensureSubfolders, ensureFolderPath, createTextFile } from '../../integrations/google/drive.mjs';
+import { withGoogleApi, getGoogleApiMetrics } from '../../integrations/google/rate-limit.mjs';
 import { makeJobId, slugifyFolderName, ymd } from '../ids.mjs';
 import { E2E_PROMOTION_THRESHOLD } from '../match-score-demo.mjs';
 import { fetchJobPagePlainText } from './fetch-job-page-text.mjs';
@@ -56,10 +57,12 @@ function parseCompanyRole(pageTitle, url) {
 async function loadExistingInboxUrls() {
   const sheets = await getSheetsClient();
   const spreadsheetId = normalizeGoogleSheetId(requireEnv('GOOGLE_SHEET_ID'));
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: 'INBOX_RAW!A1:G5000',
-  });
+  const res = await withGoogleApi('sheetsRead', () =>
+    sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: 'INBOX_RAW!A1:G5000',
+    })
+  );
   const rows = res.data.values || [];
   const urls = new Set();
   for (let i = 1; i < rows.length; i++) {
@@ -202,5 +205,6 @@ for (const row of report.results || []) {
 
 await reapplyShortlistPursueDropdown();
 
+out.google_api_metrics = getGoogleApiMetrics();
 console.log(JSON.stringify(out, null, 2));
 process.exit(out.errors.length > 0 ? 1 : 0);

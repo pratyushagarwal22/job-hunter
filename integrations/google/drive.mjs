@@ -1,8 +1,22 @@
 import { getDriveClientOAuth } from './auth.mjs';
 import { requireEnv } from './env.mjs';
+import { withGoogleApi } from './rate-limit.mjs';
 import { createReadStream } from 'fs';
 
 export const REQUIRED_SUBFOLDERS = ['RESUME', 'COVERLETTER', 'EMAIL', 'JDS', 'CONTEXT'];
+
+/**
+ * Process-scoped folder cache. Stage 3 calls `ensureFolderPath(EMAIL_BUCKET,
+ * [companyFolder, jobFolder])` per contact-with-email, so 80 contacts × 2
+ * segments would be 160 `files.list` calls per job without this cache.
+ *
+ * Key shape: `${parentId}|${name}`. Stored value is the folder id (string).
+ * Lifetime: the lifetime of the Node process; runs are short-lived, so we
+ * don't need invalidation. If a folder is deleted out-of-band mid-run, the
+ * worst case is a stale id and one downstream Drive error which the retry
+ * wrapper will surface — that's acceptable for our usage.
+ */
+const folderCache = new Map();
 
 /**
  * @param {string} urlOrId Drive share URL or raw file id
@@ -27,9 +41,11 @@ export function parseDriveFileId(urlOrId) {
  */
 export async function exportFileUtf8(fileId) {
   const drive = await getDriveClientOAuth();
-  const res = await drive.files.get(
-    { fileId, alt: 'media' },
-    { responseType: 'arraybuffer' }
+  const res = await withGoogleApi('drive', () =>
+    drive.files.get(
+      { fileId, alt: 'media' },
+      { responseType: 'arraybuffer' }
+    )
   );
   return Buffer.from(res.data).toString('utf-8');
 }
@@ -41,27 +57,31 @@ function escapeDriveQueryValue(s) {
 export async function getRootFolder() {
   const drive = await getDriveClientOAuth();
   const rootFolderId = requireEnv('GOOGLE_DRIVE_ROOT_FOLDER_ID');
-  const res = await drive.files.get({
-    fileId: rootFolderId,
-    fields: 'id,name,mimeType',
-    supportsAllDrives: true,
-  });
+  const res = await withGoogleApi('drive', () =>
+    drive.files.get({
+      fileId: rootFolderId,
+      fields: 'id,name,mimeType',
+      supportsAllDrives: true,
+    })
+  );
   return { drive, rootFolder: res.data };
 }
 
 export async function listChildFolders(parentId) {
   const drive = await getDriveClientOAuth();
-  const res = await drive.files.list({
-    q: [
-      `'${parentId}' in parents`,
-      `mimeType='application/vnd.google-apps.folder'`,
-      'trashed=false',
-    ].join(' and '),
-    fields: 'files(id,name)',
-    pageSize: 1000,
-    supportsAllDrives: true,
-    includeItemsFromAllDrives: true,
-  });
+  const res = await withGoogleApi('drive', () =>
+    drive.files.list({
+      q: [
+        `'${parentId}' in parents`,
+        `mimeType='application/vnd.google-apps.folder'`,
+        'trashed=false',
+      ].join(' and '),
+      fields: 'files(id,name)',
+      pageSize: 1000,
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+    })
+  );
   return res.data.files || [];
 }
 
@@ -75,14 +95,16 @@ export async function listChildren(parentId) {
   const files = [];
   let pageToken = undefined;
   do {
-    const res = await drive.files.list({
-      q,
-      fields: 'nextPageToken,files(id,name,mimeType)',
-      pageSize: 1000,
-      supportsAllDrives: true,
-      includeItemsFromAllDrives: true,
-      pageToken,
-    });
+    const res = await withGoogleApi('drive', () =>
+      drive.files.list({
+        q,
+        fields: 'nextPageToken,files(id,name,mimeType)',
+        pageSize: 1000,
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true,
+        pageToken,
+      })
+    );
     files.push(...(res.data.files || []));
     pageToken = res.data.nextPageToken || undefined;
   } while (pageToken);
@@ -99,30 +121,48 @@ export async function findChildFolderByName(parentId, name) {
     'trashed=false',
   ].join(' and ');
 
-  const res = await drive.files.list({
-    q,
-    fields: 'files(id,name)',
-    pageSize: 10,
-    supportsAllDrives: true,
-    includeItemsFromAllDrives: true,
-  });
+  const res = await withGoogleApi('drive', () =>
+    drive.files.list({
+      q,
+      fields: 'files(id,name)',
+      pageSize: 10,
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+    })
+  );
   return (res.data.files || [])[0] || null;
 }
 
 export async function ensureFolder(parentId, name) {
+  const cacheKey = `${parentId}|${name}`;
+  const cached = folderCache.get(cacheKey);
+  if (cached) {
+    // We only return the id we have; callers that need a full file resource
+    // (with mimeType etc.) can call findChildFolderByName themselves. This
+    // matches the existing return shape (`{ folder: { id, name } }`) so
+    // ensureFolderPath / ensureSubfolders consumers are unaffected.
+    return { folder: { id: cached, name }, created: false };
+  }
+
   const drive = await getDriveClientOAuth();
   const existing = await findChildFolderByName(parentId, name);
-  if (existing) return { folder: existing, created: false };
+  if (existing) {
+    folderCache.set(cacheKey, existing.id);
+    return { folder: existing, created: false };
+  }
 
-  const res = await drive.files.create({
-    requestBody: {
-      name,
-      mimeType: 'application/vnd.google-apps.folder',
-      parents: [parentId],
-    },
-    fields: 'id,name',
-    supportsAllDrives: true,
-  });
+  const res = await withGoogleApi('drive', () =>
+    drive.files.create({
+      requestBody: {
+        name,
+        mimeType: 'application/vnd.google-apps.folder',
+        parents: [parentId],
+      },
+      fields: 'id,name',
+      supportsAllDrives: true,
+    })
+  );
+  folderCache.set(cacheKey, res.data.id);
   return { folder: res.data, created: true };
 }
 
@@ -145,55 +185,65 @@ export async function ensureSubfolders(parentId, names = REQUIRED_SUBFOLDERS) {
   const created = [];
   for (const name of names) {
     if (byName.has(name)) continue;
-    const res = await drive.files.create({
-      requestBody: {
-        name,
-        mimeType: 'application/vnd.google-apps.folder',
-        parents: [parentId],
-      },
-      fields: 'id,name',
-      supportsAllDrives: true,
-    });
+    const res = await withGoogleApi('drive', () =>
+      drive.files.create({
+        requestBody: {
+          name,
+          mimeType: 'application/vnd.google-apps.folder',
+          parents: [parentId],
+        },
+        fields: 'id,name',
+        supportsAllDrives: true,
+      })
+    );
+    folderCache.set(`${parentId}|${name}`, res.data.id);
     created.push(res.data);
   }
 
+  // Re-list once to get the canonical post-state, and prime the cache for any
+  // folders that already existed.
   const finalList = await listChildFolders(parentId);
+  for (const f of finalList) folderCache.set(`${parentId}|${f.name}`, f.id);
   return { created, folders: finalList };
 }
 
 export async function createTextFile(parentId, name, contents) {
   const drive = await getDriveClientOAuth();
-  const res = await drive.files.create({
-    requestBody: {
-      name,
-      parents: [parentId],
-      mimeType: 'text/plain',
-    },
-    media: {
-      mimeType: 'text/plain',
-      body: contents,
-    },
-    fields: 'id,name,webViewLink',
-    supportsAllDrives: true,
-  });
+  const res = await withGoogleApi('drive', () =>
+    drive.files.create({
+      requestBody: {
+        name,
+        parents: [parentId],
+        mimeType: 'text/plain',
+      },
+      media: {
+        mimeType: 'text/plain',
+        body: contents,
+      },
+      fields: 'id,name,webViewLink',
+      supportsAllDrives: true,
+    })
+  );
   return res.data;
 }
 
 export async function uploadFileFromPath({ parentId, filename, mimeType, filePath }) {
   const drive = await getDriveClientOAuth();
-  const res = await drive.files.create({
-    requestBody: {
-      name: filename,
-      parents: [parentId],
-      mimeType,
-    },
-    media: {
-      mimeType,
-      body: createReadStream(filePath),
-    },
-    fields: 'id,name,webViewLink',
-    supportsAllDrives: true,
-  });
+  const res = await withGoogleApi('drive', () =>
+    drive.files.create({
+      requestBody: {
+        name: filename,
+        parents: [parentId],
+        mimeType,
+      },
+      media: {
+        mimeType,
+        body: createReadStream(filePath),
+      },
+      fields: 'id,name,webViewLink',
+      supportsAllDrives: true,
+    })
+  );
   return res.data;
 }
 
@@ -205,22 +255,26 @@ export async function listFilesByNamePrefix(parentId, prefix) {
     'trashed=false',
   ].join(' and ');
 
-  const res = await drive.files.list({
-    q,
-    fields: 'files(id,name,parents)',
-    pageSize: 1000,
-    supportsAllDrives: true,
-    includeItemsFromAllDrives: true,
-  });
+  const res = await withGoogleApi('drive', () =>
+    drive.files.list({
+      q,
+      fields: 'files(id,name,parents)',
+      pageSize: 1000,
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+    })
+  );
   return res.data.files || [];
 }
 
 export async function deleteFile(fileId) {
   const drive = await getDriveClientOAuth();
-  await drive.files.delete({
-    fileId,
-    supportsAllDrives: true,
-  });
+  await withGoogleApi('drive', () =>
+    drive.files.delete({
+      fileId,
+      supportsAllDrives: true,
+    })
+  );
   return { deleted: true, fileId };
 }
 
@@ -232,6 +286,10 @@ export async function deleteRecursively(folderId) {
     }
     await deleteFile(c.id);
   }
+  // A deleted folder may have stale entries in the cache; clear any keys
+  // pointing at this folder id so subsequent lookups don't return ghosts.
+  for (const [k, v] of folderCache.entries()) {
+    if (v === folderId) folderCache.delete(k);
+  }
   return { deletedFolderContents: true, folderId, childrenCount: children.length };
 }
-

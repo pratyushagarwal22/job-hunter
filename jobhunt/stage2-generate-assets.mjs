@@ -18,6 +18,7 @@ import { loadDotenv } from '../integrations/google/env.mjs';
 import { getSheetsClient } from '../integrations/google/auth.mjs';
 import { normalizeGoogleSheetId, requireEnv } from '../integrations/google/env.mjs';
 import { appendRow } from '../integrations/google/sheets.mjs';
+import { withGoogleApi, getGoogleApiMetrics } from '../integrations/google/rate-limit.mjs';
 import { mkdtempSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -123,7 +124,9 @@ try {
 
   const REGENERATE = String(process.env.JOBHUNT_REGENERATE_ASSETS || '').trim() === '1';
 
-  const existingAssets = await sheets.spreadsheets.values.get({ spreadsheetId, range: 'ASSETS!A1:A' });
+  const existingAssets = await withGoogleApi('sheetsRead', () =>
+    sheets.spreadsheets.values.get({ spreadsheetId, range: 'ASSETS!A1:A' })
+  );
   const existingAssetRows = existingAssets.data.values || [];
   const existingJobIdToRow = new Map();
   for (let i = 1; i < existingAssetRows.length; i++) {
@@ -133,7 +136,9 @@ try {
   }
   const existingJobIds = new Set(existingJobIdToRow.keys());
 
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId, range: 'SHORTLIST!A1:K' });
+  const res = await withGoogleApi('sheetsRead', () =>
+    sheets.spreadsheets.values.get({ spreadsheetId, range: 'SHORTLIST!A1:K' })
+  );
   const rows = res.data.values || [];
   if (rows.length <= 1) {
     report.ok = true;
@@ -309,12 +314,14 @@ try {
 
       const existingRow = existingJobIdToRow.get(job_id);
       if (existingRow) {
-        await sheets.spreadsheets.values.update({
-          spreadsheetId,
-          range: `ASSETS!A${existingRow}:N${existingRow}`,
-          valueInputOption: 'RAW',
-          requestBody: { values: [assetsRowValues] },
-        });
+        await withGoogleApi('sheetsWrite', () =>
+          sheets.spreadsheets.values.update({
+            spreadsheetId,
+            range: `ASSETS!A${existingRow}:N${existingRow}`,
+            valueInputOption: 'RAW',
+            requestBody: { values: [assetsRowValues] },
+          })
+        );
       } else {
         await appendRow('ASSETS', assetsRowValues);
       }
@@ -356,5 +363,6 @@ try {
   report.error = err?.message || String(err);
 }
 
+report.google_api_metrics = getGoogleApiMetrics();
 console.log(JSON.stringify(report, null, 2));
 process.exit(report.ok ? 0 : 1);

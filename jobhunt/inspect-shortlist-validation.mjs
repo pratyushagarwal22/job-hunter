@@ -11,18 +11,21 @@
 import { loadDotenv } from '../integrations/google/env.mjs';
 import { getSheetsClient } from '../integrations/google/auth.mjs';
 import { normalizeGoogleSheetId, requireEnv } from '../integrations/google/env.mjs';
+import { withGoogleApi } from '../integrations/google/rate-limit.mjs';
 
 await loadDotenv();
 
 const sheets = await getSheetsClient();
 const spreadsheetId = normalizeGoogleSheetId(requireEnv('GOOGLE_SHEET_ID'));
 
-const res = await sheets.spreadsheets.get({
-  spreadsheetId,
-  includeGridData: true,
-  ranges: ['SHORTLIST!B2:B10'],
-  fields: 'sheets(properties.title,data.rowData.values.dataValidation)',
-});
+const res = await withGoogleApi('sheetsRead', () =>
+  sheets.spreadsheets.get({
+    spreadsheetId,
+    includeGridData: true,
+    ranges: ['SHORTLIST!B2:B10'],
+    fields: 'sheets(properties.title,data.rowData.values.dataValidation)',
+  })
+);
 
 const sheet = (res.data.sheets || []).find(s => s.properties?.title === 'SHORTLIST');
 const rowData = sheet?.data?.[0]?.rowData || [];

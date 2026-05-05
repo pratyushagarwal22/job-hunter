@@ -1,5 +1,6 @@
 import { normalizeGoogleSheetId, requireEnv } from './env.mjs';
 import { getSheetsClient } from './auth.mjs';
+import { withGoogleApi } from './rate-limit.mjs';
 
 export const REQUIRED_TABS = [
   'INBOX_RAW',
@@ -22,7 +23,9 @@ export async function getSheetIdByTitle(title) {
 export async function getSpreadsheet() {
   const sheets = await getSheetsClient();
   const spreadsheetId = normalizeGoogleSheetId(requireEnv('GOOGLE_SHEET_ID'));
-  const res = await sheets.spreadsheets.get({ spreadsheetId });
+  const res = await withGoogleApi('sheetsRead', () =>
+    sheets.spreadsheets.get({ spreadsheetId })
+  );
   return { sheets, spreadsheetId, spreadsheet: res.data };
 }
 
@@ -42,10 +45,12 @@ export async function ensureTabsExist(titles = REQUIRED_TABS) {
     addSheet: { properties: { title } },
   }));
 
-  await sheets.spreadsheets.batchUpdate({
-    spreadsheetId,
-    requestBody: { requests },
-  });
+  await withGoogleApi('sheetsWrite', () =>
+    sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: { requests },
+    })
+  );
 
   return { spreadsheetId, created: missing };
 }
@@ -55,14 +60,56 @@ export async function appendRow(tabTitle, values) {
   const spreadsheetId = normalizeGoogleSheetId(requireEnv('GOOGLE_SHEET_ID'));
 
   const range = `${tabTitle}!A1`;
-  const res = await sheets.spreadsheets.values.append({
-    spreadsheetId,
-    range,
-    valueInputOption: 'USER_ENTERED',
-    insertDataOption: 'INSERT_ROWS',
-    requestBody: { values: [values] },
-  });
+  const res = await withGoogleApi('sheetsWrite', () =>
+    sheets.spreadsheets.values.append({
+      spreadsheetId,
+      range,
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: { values: [values] },
+    })
+  );
 
+  return res.data;
+}
+
+/**
+ * Append many rows to a tab in a single Sheets API call. Cuts ~Nx writes when
+ * Stage 3 emits ~80 contacts/job. `valuesMatrix` is a 2D array shaped exactly
+ * like `valueInputOption: USER_ENTERED` requestBody.values. Returns null on
+ * empty input so callers can just pass through accumulators unconditionally.
+ */
+export async function appendRows(tabTitle, valuesMatrix) {
+  if (!Array.isArray(valuesMatrix) || valuesMatrix.length === 0) return null;
+  const sheets = await getSheetsClient();
+  const spreadsheetId = normalizeGoogleSheetId(requireEnv('GOOGLE_SHEET_ID'));
+  const res = await withGoogleApi('sheetsWrite', () =>
+    sheets.spreadsheets.values.append({
+      spreadsheetId,
+      range: `${tabTitle}!A1`,
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: { values: valuesMatrix },
+    })
+  );
+  return res.data;
+}
+
+/**
+ * Apply many disjoint range updates in a single batchUpdate. `updates` is an
+ * array of `{ range, values }` shaped exactly like
+ * `sheets.spreadsheets.values.batchUpdate` data entries. No-op for empty.
+ */
+export async function updateRanges(updates, valueInputOption = 'RAW') {
+  if (!Array.isArray(updates) || updates.length === 0) return null;
+  const sheets = await getSheetsClient();
+  const spreadsheetId = normalizeGoogleSheetId(requireEnv('GOOGLE_SHEET_ID'));
+  const res = await withGoogleApi('sheetsWrite', () =>
+    sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId,
+      requestBody: { valueInputOption, data: updates },
+    })
+  );
   return res.data;
 }
 
@@ -71,7 +118,9 @@ export async function ensureHeaderRow(tabTitle, headers) {
   const spreadsheetId = normalizeGoogleSheetId(requireEnv('GOOGLE_SHEET_ID'));
 
   const range = `${tabTitle}!A1:ZZ1`;
-  const existing = await sheets.spreadsheets.values.get({ spreadsheetId, range });
+  const existing = await withGoogleApi('sheetsRead', () =>
+    sheets.spreadsheets.values.get({ spreadsheetId, range })
+  );
   const row = (existing.data.values && existing.data.values[0]) ? existing.data.values[0] : [];
 
   const same =
@@ -80,12 +129,14 @@ export async function ensureHeaderRow(tabTitle, headers) {
 
   if (same) return { updated: false };
 
-  await sheets.spreadsheets.values.update({
-    spreadsheetId,
-    range: `${tabTitle}!A1`,
-    valueInputOption: 'RAW',
-    requestBody: { values: [headers] },
-  });
+  await withGoogleApi('sheetsWrite', () =>
+    sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${tabTitle}!A1`,
+      valueInputOption: 'RAW',
+      requestBody: { values: [headers] },
+    })
+  );
 
   return { updated: true };
 }
@@ -142,10 +193,12 @@ export async function setDropdownValidation({ tabTitle, a1Range, options }) {
     },
   ];
 
-  await sheets.spreadsheets.batchUpdate({
-    spreadsheetId,
-    requestBody: { requests },
-  });
+  await withGoogleApi('sheetsWrite', () =>
+    sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: { requests },
+    })
+  );
 
   return { ok: true };
 }
@@ -170,20 +223,22 @@ export async function clearDataValidation({ tabTitle, a1Range }) {
   const startRowIndex = Number(rowA) - 1;
   const endRowIndex = rowB ? Number(rowB) : undefined;
 
-  await sheets.spreadsheets.batchUpdate({
-    spreadsheetId,
-    requestBody: {
-      requests: [
-        {
-          repeatCell: {
-            range: { sheetId, startRowIndex, endRowIndex, startColumnIndex, endColumnIndex },
-            cell: { dataValidation: null },
-            fields: 'dataValidation',
+  await withGoogleApi('sheetsWrite', () =>
+    sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [
+          {
+            repeatCell: {
+              range: { sheetId, startRowIndex, endRowIndex, startColumnIndex, endColumnIndex },
+              cell: { dataValidation: null },
+              fields: 'dataValidation',
+            },
           },
-        },
-      ],
-    },
-  });
+        ],
+      },
+    })
+  );
 
   return { ok: true };
 }
@@ -193,10 +248,12 @@ export async function clearTabExceptHeader(tabTitle) {
 
   // Clear all values from row 2 onward, keep header row intact.
   // This avoids shrinking the sheet grid (which breaks validations like B2:B).
-  await sheets.spreadsheets.values.clear({
-    spreadsheetId,
-    range: `${tabTitle}!A2:ZZ`,
-  });
+  await withGoogleApi('sheetsWrite', () =>
+    sheets.spreadsheets.values.clear({
+      spreadsheetId,
+      range: `${tabTitle}!A2:ZZ`,
+    })
+  );
 
   return { cleared: true };
 }
@@ -225,23 +282,24 @@ export async function ensureMinRows(tabTitle, minRows) {
   const current = sheet.properties.gridProperties?.rowCount || 0;
   if (current >= minRows) return { updated: false, rowCount: current };
 
-  await sheets.spreadsheets.batchUpdate({
-    spreadsheetId,
-    requestBody: {
-      requests: [
-        {
-          updateSheetProperties: {
-            properties: {
-              sheetId,
-              gridProperties: { rowCount: minRows },
+  await withGoogleApi('sheetsWrite', () =>
+    sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [
+          {
+            updateSheetProperties: {
+              properties: {
+                sheetId,
+                gridProperties: { rowCount: minRows },
+              },
+              fields: 'gridProperties.rowCount',
             },
-            fields: 'gridProperties.rowCount',
           },
-        },
-      ],
-    },
-  });
+        ],
+      },
+    })
+  );
 
   return { updated: true, rowCount: minRows };
 }
-

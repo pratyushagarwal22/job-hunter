@@ -14,6 +14,7 @@
 import { loadDotenv } from '../integrations/google/env.mjs';
 import { clearTabExceptHeader, reapplyShortlistPursueDropdown } from '../integrations/google/sheets.mjs';
 import { getRootFolder, ensureSubfolders, deleteRecursively } from '../integrations/google/drive.mjs';
+import { getGoogleApiMetrics } from '../integrations/google/rate-limit.mjs';
 
 await loadDotenv();
 
@@ -60,6 +61,7 @@ try {
   report.error = err?.message || String(err);
 }
 
+report.google_api_metrics = getGoogleApiMetrics();
 console.log(JSON.stringify(report, null, 2));
 process.exit(report.ok ? 0 : 1);
 

@@ -12,6 +12,7 @@
 
 import { loadDotenv } from '../integrations/google/env.mjs';
 import { ensureTabsExist, ensureHeaders, ensureMinRows, reapplyShortlistPursueDropdown } from '../integrations/google/sheets.mjs';
+import { getGoogleApiMetrics } from '../integrations/google/rate-limit.mjs';
 import { HEADERS } from './command-center-schema.mjs';
 
 await loadDotenv();
@@ -42,6 +43,7 @@ try {
   report.error = err?.message || String(err);
 }
 
+report.google_api_metrics = getGoogleApiMetrics();
 console.log(JSON.stringify(report, null, 2));
 process.exit(report.ok ? 0 : 1);
 
