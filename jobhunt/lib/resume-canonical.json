@@ -1,4 +1,20 @@
 {
+  "education": [
+    {
+      "id": "uiuc",
+      "school": "University of Illinois at Urbana-Champaign",
+      "dateRange": "Aug 2024 -- May 2026",
+      "degree": "Master of Science in Information Management; GPA: 3.75/4.0",
+      "location": "Champaign, IL"
+    },
+    {
+      "id": "muj",
+      "school": "Manipal University Jaipur",
+      "dateRange": "Jul 2018 -- Jul 2022",
+      "degree": "Bachelor of Technology in Computer and Communication Engineering; GPA: 8.53/10.0",
+      "location": "Jaipur, India"
+    }
+  ],
   "experience": [
     {
       "id": "kohler",

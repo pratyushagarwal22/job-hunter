@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
 import { resolveAnthropicModel } from '../../integrations/anthropic/config.mjs';
 import { extractJsonObject } from './claude-json.mjs';
-import { buildEducationFromCv, loadCvSections } from './cv-resume-builder.mjs';
+import { buildEducationFromCv, buildEducationLatex, loadCvSections } from './cv-resume-builder.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -99,86 +99,6 @@ function sanitizeTagLineThirdArg(s) {
     .trim();
 }
 
-/** True if `{` / `}` depth stays >= 0 and ends at 0; `\x` skips the next character. */
-export function isBraceBalanced(s) {
-  const str = String(s || '');
-  let depth = 0;
-  for (let i = 0; i < str.length; i++) {
-    if (str[i] === '\\') {
-      i++;
-      continue;
-    }
-    if (str[i] === '{') depth++;
-    else if (str[i] === '}') {
-      depth--;
-      if (depth < 0) return false;
-    }
-  }
-  return depth === 0;
-}
-
-/**
- * Parse two braced arguments after `macroName` at each occurrence.
- * @returns {Array<{ args: [string, string] }> | null} null if any occurrence is malformed
- */
-function findMacroCalls(src, macroName) {
-  const out = [];
-  const re = new RegExp(`\\\\${macroName}\\b`, 'g');
-  let m;
-  while ((m = re.exec(src))) {
-    let i = m.index + m[0].length;
-    while (i < src.length && /\s/.test(src[i])) i++;
-    const a1 = scanBalancedBraceArg(src, i);
-    if (!a1) return null;
-    i = a1.end;
-    while (i < src.length && /\s/.test(src[i])) i++;
-    const a2 = scanBalancedBraceArg(src, i);
-    if (!a2) return null;
-    out.push({ args: [a1.content, a2.content] });
-    re.lastIndex = a2.end;
-  }
-  return out;
-}
-
-/** `i` must point at `{`; returns content inside braces and index after closing `}`. */
-function scanBalancedBraceArg(src, i) {
-  if (src[i] !== '{') return null;
-  let depth = 1;
-  let j = i + 1;
-  while (j < src.length && depth > 0) {
-    if (src[j] === '\\') {
-      j += 2;
-      continue;
-    }
-    if (src[j] === '{') depth++;
-    else if (src[j] === '}') depth--;
-    j++;
-  }
-  if (depth !== 0) return null;
-  return { content: src.slice(i + 1, j - 1), end: j };
-}
-
-const EDUCATION_MACROS = ['resumeEducationCertifications', 'resumeEducationCoursework'];
-
-/**
- * Structural validation for Claude's education LaTeX fragment (coursework / cert macros).
- */
-export function validateEducationFragment(raw) {
-  const s = String(raw || '');
-  if (!isBraceBalanced(s)) return { ok: false, reason: 'unbalanced braces' };
-  for (const macro of EDUCATION_MACROS) {
-    const calls = findMacroCalls(s, macro);
-    if (calls === null) return { ok: false, reason: `malformed ${macro}` };
-    for (const { args } of calls) {
-      if (args.length !== 2) return { ok: false, reason: `${macro} arity` };
-      for (const a of args) {
-        if (!isBraceBalanced(a)) return { ok: false, reason: `${macro} arg braces` };
-      }
-    }
-  }
-  return { ok: true };
-}
-
 /** Fix experience / extracurricular order to match resume-canonical.json (reverse-chronological). */
 function reorderToCanonical(canonicalList, includeIds) {
   const wanted = new Set(includeIds || []);
@@ -244,6 +164,39 @@ function validateIdList(arr, label, allowed) {
   const set = new Set(allowed);
   for (const id of arr) {
     if (!set.has(id)) throw new Error(`Unknown id "${id}" in ${label}`);
+  }
+}
+
+/**
+ * Keys in education_coursework / education_certifications must be subset of education_include.
+ * Values must be non-empty string or non-empty string[] (after trim).
+ */
+function validateEducationSupplementalMaps(coursework, certifications, allowedIncludeIds) {
+  const allowed = new Set(allowedIncludeIds);
+  for (const [label, obj] of [
+    ['education_coursework', coursework],
+    ['education_certifications', certifications],
+  ]) {
+    if (obj == null) continue;
+    if (typeof obj !== 'object' || Array.isArray(obj)) {
+      throw new Error(`${label} must be a plain object mapping school id to string or string[]`);
+    }
+    for (const id of Object.keys(obj)) {
+      if (!allowed.has(id)) {
+        throw new Error(`${label}: key "${id}" must be listed in education_include`);
+      }
+      const v = obj[id];
+      if (Array.isArray(v)) {
+        const parts = v.map((x) => String(x || '').trim()).filter(Boolean);
+        if (!parts.length) {
+          throw new Error(`${label}: value for "${id}" must be a non-empty array of strings`);
+        }
+      } else if (typeof v === 'string') {
+        if (!v.trim()) throw new Error(`${label}: value for "${id}" must be a non-empty string`);
+      } else {
+        throw new Error(`${label}: value for "${id}" must be string or string[]`);
+      }
+    }
   }
 }
 
@@ -345,21 +298,45 @@ ${inner}
  * @param {Record<string, unknown>} parsed
  */
 function buildTemplateSectionsFromResumeBody(canonical, parsed) {
-  const educationRaw = String(parsed.education || '');
   const skillsRaw = String(parsed.skills || '');
 
-  forbidExtraListWrappers(educationRaw, 'education');
   forbidExtraListWrappers(skillsRaw, 'skills');
 
-  const educationCheck = validateEducationFragment(educationRaw);
+  const allowedEdu = Array.isArray(canonical.education)
+    ? canonical.education.map((e) => e.id)
+    : [];
+  if (!allowedEdu.length) {
+    throw new Error('resume-canonical.json must define a non-empty education[]');
+  }
+
   let education;
-  if (educationCheck.ok) {
-    education = sanitizeItemBulletText(
-      educationRaw.replace(/(?<!\\)\s*&\s*/g, ' and ')
-    );
+  const eduInc = parsed.education_include;
+  if (Array.isArray(eduInc) && eduInc.length > 0) {
+    validateIdList(eduInc, 'education_include', allowedEdu);
+    const orderedEdu = reorderToCanonical(canonical.education, eduInc);
+    if (modelOrderDiffers(eduInc, orderedEdu)) {
+      parsed.__education_order_normalized = true;
+    }
+
+    const cwMap =
+      parsed.education_coursework != null && typeof parsed.education_coursework === 'object'
+        ? parsed.education_coursework
+        : {};
+    const certMap =
+      parsed.education_certifications != null && typeof parsed.education_certifications === 'object'
+        ? parsed.education_certifications
+        : {};
+
+    validateEducationSupplementalMaps(cwMap, certMap, orderedEdu);
+
+    education = buildEducationLatex(canonical.education, {
+      include: orderedEdu,
+      coursework: cwMap,
+      certifications: certMap,
+    });
   } else {
     education = buildEducationFromCv(loadCvSections());
-    parsed.__education_fallback_reason = educationCheck.reason;
+    parsed.__education_fallback_reason = 'education_legacy_or_missing';
   }
 
   const skillsTrim = skillsRaw.trim();
@@ -484,17 +461,22 @@ export async function generateResumeTex(client, { company, role, jdText, context
   const allowedProj = canonical.projects.map((p) => p.id);
   const allowedRes = canonical.research.map((r) => r.id);
   const allowedExtra = canonical.extracurricular.map((e) => e.id);
+  const allowedEdu = Array.isArray(canonical.education)
+    ? canonical.education.map((e) => e.id)
+    : [];
 
   const systemBody = `You tailor resume CONTENT for a specific job. Reply with STRICT JSON only (no markdown).
 
 Always include these sections in the JSON (required for the PDF template):
-- education, skills, experience_include + experience_bullets, projects_include + project_bullets
+- education_include, skills, experience_include + experience_bullets, projects_include + project_bullets
 Optional (omit when they do not strengthen this application):
+- education_coursework — plain object mapping school id (from education_include) to either an array of course title strings (preferred) or one comma-separated string. Only include ids where you want a Relevant Coursework line; omit the key entirely otherwise. Each value must be non-empty. The pipeline renders each as \\resumeEducationCoursework{Relevant Coursework}{body} immediately under that school's subheading (you never emit LaTeX for education).
+- education_certifications — same shape as education_coursework; rendered as \\resumeEducationCertifications{Certifications}{body} under that school only.
 - research_include + research_bullets — use research_include: [] and {} bullets to omit Research entirely.
 - extracurricular_include + extracurricular_bullets — use [] / omit bullets to omit Extracurricular entirely.
 
 Keys:
-- education: LaTeX fragment ONLY for inside the Education section's outer list — same overall structure as examples/cv-complete.tex and templates/cv-template.tex (\\resumeSubheading rows). For coursework and certifications you MUST use exactly two braced arguments each: \\resumeEducationCoursework{<label>}{<body>} and \\resumeEducationCertifications{<label>}{<body>}. The label is the short heading text only (no trailing colon; the template macros supply punctuation). The body is the remainder (e.g. comma-separated courses or certs). Do NOT include \\section{Education}, \\resumeSubHeadingListStart, or \\resumeSubHeadingListEnd.
+- education_include: non-empty array of school ids — subset of ${JSON.stringify(allowedEdu)}. Display order is fixed to the canonical resume order; the pipeline reorders your array to match. Include every school you want on the resume (typically all listed ids unless space is critical).
 - skills: one complete LaTeX \\item{ ... } block as in cv-complete.tex (the template's Technical Skills section has a single list entry). Inside: multiple \\\\textbf{Category}{: skills} lines separated by \\\\.
 - experience_include: array of ids — subset of ${JSON.stringify(allowedExp)} (at least one). Display order is fixed by the canonical resume (reverse-chronological); the pipeline reorders your array to match. Choose which roles to include, not their order.
 - experience_bullets: object; for each id in experience_include, an array of non-empty strings (bullet bodies only, no \\item, no LaTeX section commands).
@@ -512,11 +494,12 @@ Hard rules:
 - No LaTeX preamble, no \\usepackage, no redefinitions of resume macros.
 - Facts must match cv.md, profile.yml, and article-digest.md; do not invent employers or degrees.
 - Bullet strings are plain prose unless a macro is required; avoid raw % and $ where possible (post-processing will fix common cases).
+- Education: school names, degrees, dates, and locations come from the canonical resume data — you only choose which school ids to include and optionally tailor coursework/certification text per id. Coursework and certifications MUST be tied to exactly one school id each — never put a course or certification from one school under another id. Only reuse items that appear under that school's block in cv.md Education; do not invent courses or certs.
 
 Length discipline (aim for ~1-2 pages when compiled with this template; avoid 3+ pages):
 - Prefer at most 4 bullets per experience role (3 is typical); only exceed when one role is clearly the spine of the story for this JD.
 - Prefer at most 3 bullets per project (2 for secondary projects).
-- Keep education compact; short coursework/cert lines unless the JD explicitly demands them.
+- Keep education compact: prefer 5–8 most JD-relevant courses per school when you include coursework; prefer 2–4 certifications per school when you include certifications. Omit education_coursework or education_certifications keys (or omit a school id inside them) when they do not strengthen this application.
 - Omit extracurricular when it does not strengthen this application.`;
 
   const userBody = `Target role: ${role} at ${company}
@@ -534,6 +517,7 @@ ${context.cv}
 ${(context.digest || '').slice(0, 4000)}
 
 Canonical ids:
+- education: ${allowedEdu.join(', ')}
 - experience: ${allowedExp.join(', ')}
 - projects: ${allowedProj.join(', ')}
 - research: ${allowedRes.join(', ')}
@@ -557,6 +541,9 @@ Canonical ids:
   const resume_warnings = [];
   if (parsed.__education_fallback_reason) {
     resume_warnings.push(`education_fallback: ${parsed.__education_fallback_reason}`);
+  }
+  if (parsed.__education_order_normalized) {
+    resume_warnings.push('education_include reordered to canonical resume order');
   }
   if (parsed.__experience_order_normalized) {
     resume_warnings.push('experience_include reordered to canonical reverse-chronological order');

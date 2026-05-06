@@ -1,8 +1,11 @@
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
 
 const ROOT = process.cwd();
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const CANONICAL_RESUME_JSON = join(__dirname, 'resume-canonical.json');
 
 function latexEscape(s) {
   return String(s || '')
@@ -110,8 +113,142 @@ function splitEducationLabelBody(line, defaultLabel) {
   return { label: defaultLabel, body: s };
 }
 
-function parseEducation(lines) {
-  const out = [];
+function loadCanonicalEducation() {
+  const raw = readFileSync(CANONICAL_RESUME_JSON, 'utf-8');
+  const doc = JSON.parse(raw);
+  const ed = doc?.education;
+  if (!Array.isArray(ed) || ed.length === 0) {
+    throw new Error('resume-canonical.json must define a non-empty education[]');
+  }
+  for (const row of ed) {
+    if (!row?.id || !row?.school || !row?.dateRange || row.degree == null || row.location == null) {
+      throw new Error(`resume-canonical.json education entry invalid: ${JSON.stringify(row)}`);
+    }
+  }
+  return ed;
+}
+
+function normalizeSchoolName(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function matchSchoolToEducationId(school, canonicalEducation) {
+  const want = normalizeSchoolName(school);
+  for (const row of canonicalEducation) {
+    if (normalizeSchoolName(row.school) === want) return row.id;
+  }
+  throw new Error(`cv.md Education: no resume-canonical education id for school "${school}"`);
+}
+
+/** Match canonical.json education[] order; filter to ids the caller included. */
+function reorderEducationInclude(canonicalEducation, includeIds) {
+  const wanted = new Set(includeIds || []);
+  return canonicalEducation.map((x) => x.id).filter((id) => wanted.has(id));
+}
+
+/** Brace depth for `{` / `}`; `\` skips the next character (same rule as claude-asset-generators). */
+function isBraceBalancedTex(s) {
+  const str = String(s || '');
+  let depth = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === '\\') {
+      i++;
+      continue;
+    }
+    if (str[i] === '{') depth++;
+    else if (str[i] === '}') {
+      depth--;
+      if (depth < 0) return false;
+    }
+  }
+  return depth === 0;
+}
+
+function stripTrailingColon(s) {
+  return String(s || '').replace(/\s*:\s*$/u, '').trim();
+}
+
+function normalizeEducationBodyInput(s) {
+  return stripTrailingColon(String(s || '').replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim());
+}
+
+function ampersandSweep(s) {
+  return String(s || '').replace(/(?<!\\)\s*&\s*/g, ' and ');
+}
+
+/**
+ * Deterministic Education LaTeX: one \\resumeSubheading per id, then optional
+ * \\resumeEducationCoursework{label}{body} and \\resumeEducationCertifications{label}{body}
+ * immediately under that school only.
+ *
+ * @param {Array<{ id: string, school: string, dateRange: string, degree: string, location: string }>} canonicalEducation
+ * @param {{ include: string[], coursework?: Record<string, string | string[]>, certifications?: Record<string, string | string[]>, courseworkLabel?: string, certificationsLabel?: string }} opts
+ */
+export function buildEducationLatex(canonicalEducation, opts) {
+  const include = opts?.include || [];
+  const coursework = opts?.coursework || {};
+  const certifications = opts?.certifications || {};
+  const courseworkLabel = opts?.courseworkLabel || 'Relevant Coursework';
+  const certificationsLabel = opts?.certificationsLabel || 'Certifications';
+
+  if (!include.length) return '';
+
+  const byId = new Map(canonicalEducation.map((e) => [e.id, e]));
+  const chunks = [];
+
+  for (const id of include) {
+    const row = byId.get(id);
+    if (!row) throw new Error(`buildEducationLatex: unknown education id "${id}"`);
+
+    chunks.push(
+      `    \\resumeSubheading
+      {${latexEscape(row.school)}}{${latexEscape(row.dateRange)}}
+      {${latexEscape(row.degree)}}{${latexEscape(row.location)}}`
+    );
+
+    const cwRaw = coursework[id];
+    if (cwRaw != null && cwRaw !== '') {
+      const joined = Array.isArray(cwRaw)
+        ? cwRaw.map((x) => String(x || '').trim()).filter(Boolean).join(', ')
+        : String(cwRaw);
+      const cwFinal = ampersandSweep(normalizeEducationBodyInput(joined));
+      if (cwFinal) {
+        const line = `  \\resumeEducationCoursework{${latexEscape(courseworkLabel)}}{${latexEscape(cwFinal)}}`;
+        if (!isBraceBalancedTex(line)) {
+          throw new Error('Internal: unbalanced braces in resumeEducationCoursework line');
+        }
+        chunks.push(line);
+      }
+    }
+
+    const certRaw = certifications[id];
+    if (certRaw != null && certRaw !== '') {
+      const joined = Array.isArray(certRaw)
+        ? certRaw.map((x) => String(x || '').trim()).filter(Boolean).join(', ')
+        : String(certRaw);
+      const certFinal = ampersandSweep(normalizeEducationBodyInput(joined));
+      if (certFinal) {
+        const line = `  \\resumeEducationCertifications{${latexEscape(certificationsLabel)}}{${latexEscape(certFinal)}}`;
+        if (!isBraceBalancedTex(line)) {
+          throw new Error('Internal: unbalanced braces in resumeEducationCertifications line');
+        }
+        chunks.push(line);
+      }
+    }
+  }
+
+  return chunks.join('\n\n');
+}
+
+/**
+ * Parse cv.md Education bullets into school blocks (same regex rules as before).
+ * @returns {Array<{ school: string, dateRange: string, degree: string, location: string, courseworkLine?: string, certificationsLine?: string }>}
+ */
+function collectEducationBlocksFromCv(lines) {
+  const blocks = [];
   for (let i = 0; i < lines.length; i++) {
     const l = lines[i].trim();
     const schoolMatch = l.match(/\*\*(.+?)\*\*\s+(.*\d{4}.*)$/);
@@ -145,35 +282,20 @@ function parseEducation(lines) {
     }
     if (current) bullets.push(current.trim());
 
-    const coursework = bullets.find((b) => /^relevant coursework\b/i.test(b.trim()));
-    const certs = bullets.find((b) => /^certifications\b/i.test(b.trim()));
+    const courseworkLine = bullets.find((b) => /^relevant coursework\b/i.test(b.trim()));
+    const certificationsLine = bullets.find((b) => /^certifications\b/i.test(b.trim()));
 
-    out.push(
-      [
-        '\\resumeSubheading',
-        `  {${latexEscape(school)}}{${latexEscape(dateRange)}}`,
-        `  {${latexEscape(degree)}}{${latexEscape(location)}}`,
-        coursework
-          ? (() => {
-              const p = splitEducationLabelBody(coursework, 'Relevant Coursework');
-              if (!p?.body) return null;
-              return `  \\resumeEducationCoursework{${latexEscape(p.label)}}{${latexEscape(p.body)}}`;
-            })()
-          : null,
-        certs
-          ? (() => {
-              const p = splitEducationLabelBody(certs, 'Certifications');
-              if (!p?.body) return null;
-              return `  \\resumeEducationCertifications{${latexEscape(p.label)}}{${latexEscape(p.body)}}`;
-            })()
-          : null,
-      ]
-        .filter(Boolean)
-        .join('\n')
-    );
+    blocks.push({
+      school,
+      dateRange,
+      degree,
+      location,
+      courseworkLine,
+      certificationsLine,
+    });
     i = j - 1;
   }
-  return out.join('\n\n');
+  return blocks;
 }
 
 function parseSkills(lines) {
@@ -315,7 +437,26 @@ export function loadCvSections() {
 }
 
 export function buildEducationFromCv(sections) {
-  return parseEducation(sections.get('Education') || []);
+  const blocks = collectEducationBlocksFromCv(sections.get('Education') || []);
+  if (!blocks.length) return '';
+  const canonicalEducation = loadCanonicalEducation();
+  const coursework = {};
+  const certifications = {};
+  const includeFromCv = [];
+  for (const b of blocks) {
+    const id = matchSchoolToEducationId(b.school, canonicalEducation);
+    includeFromCv.push(id);
+    if (b.courseworkLine) {
+      const p = splitEducationLabelBody(b.courseworkLine, 'Relevant Coursework');
+      if (p?.body) coursework[id] = p.body;
+    }
+    if (b.certificationsLine) {
+      const p = splitEducationLabelBody(b.certificationsLine, 'Certifications');
+      if (p?.body) certifications[id] = p.body;
+    }
+  }
+  const include = reorderEducationInclude(canonicalEducation, includeFromCv);
+  return buildEducationLatex(canonicalEducation, { include, coursework, certifications });
 }
 
 export function buildSkillsFromCv(sections) {
@@ -384,7 +525,7 @@ export function buildResumeTexFromCv({ summaryOverride } = {}) {
         .replace(/\s+/g, ' ')
         .trim();
 
-  const education = parseEducation(sections.get('Education') || []);
+  const education = buildEducationFromCv(sections);
   const skills = parseSkills(sections.get('Technical Skills') || []);
   const experience = parseExperience(sections.get('Experience') || []);
   const projects = parseProjects(sections.get('Projects') || []);
