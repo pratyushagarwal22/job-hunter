@@ -5,6 +5,8 @@ data/pipeline.md
 data/scan-history.tsv
 # Stage 3 Apollo dumps — local-only, never commit (rebuildable from sheet rerun)
 data/stage3/
+data/snapshots/*
+!data/snapshots/.gitkeep
 reports/*.md
 !reports/.gitkeep
 output/*

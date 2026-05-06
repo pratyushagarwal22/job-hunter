@@ -115,7 +115,9 @@ for (const row of report.results || []) {
     continue;
   }
 
-  const { company, role } = parseCompanyRole(row.page_title, url);
+  const parsedFromTitle = parseCompanyRole(row.page_title, url);
+  const company = String(row.company || '').trim() || parsedFromTitle.company;
+  const role = String(row.role || '').trim() || parsedFromTitle.role;
   const job = {
     source: 'AI_URL_REPORT',
     company,
@@ -155,6 +157,11 @@ for (const row of report.results || []) {
           match_score: row.match_score,
           rationale: (row.rationale || '').slice(0, 4000),
           page_quality: row.page_quality || '',
+          company_extracted: String(row.company || '').trim(),
+          role_extracted: String(row.role || '').trim(),
+          role_family: String(row.role_family || '').trim(),
+          min_years_experience: row.min_years_experience ?? null,
+          max_years_experience: row.max_years_experience ?? null,
           synced_at: iso,
         },
         null,

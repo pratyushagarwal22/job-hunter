@@ -1,7 +1,7 @@
 {
   "name": "career-ops",
   "version": "1.0.0",
-  "description": "AI-powered job search pipeline built on Claude Code",
+  "description": "AI-powered job search pipeline built on Claude Code and Cursor",
   "scripts": {
     "doctor": "node doctor.mjs",
     "verify": "node verify-pipeline.mjs",
@@ -22,6 +22,7 @@
     "jobhunt:e2e": "node jobhunt/seed-shortlist-8.mjs",
     "jobhunt:stage2": "node jobhunt/stage2-generate-assets.mjs",
     "jobhunt:stage3": "node jobhunt/stage3-outreach-contacts.mjs",
+    "jobhunt:rebuild-contacts-master": "node jobhunt/rebuild-contacts-master-from-disk.mjs",
     "jobhunt:claude-ping": "node jobhunt/claude-ping.mjs",
     "jobhunt:ai-score-urls": "node jobhunt/ai-test/score-from-urls.mjs",
     "jobhunt:ai-verify-models": "node jobhunt/ai-test/verify-models.mjs",
@@ -36,11 +37,11 @@
     "career",
     "automation"
   ],
-  "author": "Santiago Fernández de Valderrama <hi@santifer.io> (https://santifer.io)",
-  "homepage": "https://santifer.io",
+  "author": "Pratyush Agarwal <hi@pratyushagarwal.com> (https://pratyushagarwal.com)",
+  "homepage": "https://pratyushagarwal.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/santifer/career-ops"
+    "url": "https://github.com/pratyushagarwal22/job-hunter/"
   },
   "license": "MIT",
   "dependencies": {

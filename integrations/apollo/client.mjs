@@ -116,6 +116,7 @@ export function buildApolloSearchUrl(path = '/mixed_people/api_search', query) {
  */
 export function buildApiSearchQuery({
   domain,
+  domains,
   titles,
   seniorities,
   locations,
@@ -134,7 +135,15 @@ export function buildApiSearchQuery({
   if (Array.isArray(seniorities) && seniorities.length) query['person_seniorities[]'] = seniorities;
   if (Array.isArray(locations) && locations.length) query['person_locations[]'] = locations;
   if (Array.isArray(emailStatuses) && emailStatuses.length) query['contact_email_status[]'] = emailStatuses;
-  if (domain) query['q_organization_domains_list[]'] = [domain];
+
+  const domainList =
+    Array.isArray(domains) && domains.length > 0
+      ? domains.map((d) => String(d || '').trim()).filter(Boolean)
+      : domain
+        ? [String(domain).trim()].filter(Boolean)
+        : [];
+  if (domainList.length) query['q_organization_domains_list[]'] = domainList;
+
   return query;
 }
 
@@ -428,11 +437,13 @@ export async function enrichPerson({
  * effective ceiling is `per_page` ≤ 100 and `page` ≤ 500. Pagination is the
  * caller's job: stop when you've reached your per-kind cap or `pagination.total_pages`.
  *
- * `domain` is fed to `q_organization_domains_list[]` (single-element list);
- * pass an empty/undefined domain to search Apollo-wide (rarely useful for us).
+ * `domain` or `domains` is fed to `q_organization_domains_list[]`. Use `domains`
+ * for multiple org domains (e.g. youtube.com + google.com). If both are passed,
+ * `domains` wins. Pass empty/undefined to search Apollo-wide (rarely useful).
  *
  * @param {{
  *   domain?: string,
+ *   domains?: string[],
  *   titles?: string[],
  *   seniorities?: string[],
  *   locations?: string[],
@@ -451,6 +462,7 @@ export async function enrichPerson({
  */
 export async function searchPeopleApiSearch({
   domain,
+  domains,
   titles,
   seniorities,
   locations,
@@ -460,6 +472,7 @@ export async function searchPeopleApiSearch({
 }) {
   const query = buildApiSearchQuery({
     domain,
+    domains,
     titles,
     seniorities,
     locations,

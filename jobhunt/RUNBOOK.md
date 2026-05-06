@@ -88,7 +88,11 @@ Does **not** modify the Command Center e2e flow. Uses Playwright to open **publi
 1. `cp jobhunt/ai-test/urls.example.txt jobhunt/ai-test/urls.txt` and add **8–10 URLs** (one per line).
 2. Install browser once: `npx playwright install chromium`
 3. Optional: `npm run jobhunt:ai-verify-models` — confirms all four **`ANTHROPIC_MODEL_{SCORE,LINKEDIN,RESUME,OUTREACH}`** ids work (or defaults).
-4. Run: **`npm run jobhunt:ai-score-urls`** — writes **`jobhunt/ai-test/output/last-report.json`** (gitignored).
+4. Run: **`npm run jobhunt:ai-score-urls`** — writes **`jobhunt/ai-test/output/last-report.json`** (gitignored). Each scored row includes:
+   - `match_score` (0–10), `rationale`, `page_quality`
+   - **`company`**, **`role`** (AI-extracted from the scraped JD text)
+   - **`role_family`** (`SWE|ANALYST|PM|OTHER`)
+   - **`min_years_experience`**, **`max_years_experience`** (numbers or `null`)
 
 Some employers block headless fetch or require login; **`page_quality`** in the report hints at bad extractions. Prefer public ATS job links when you can.
 
@@ -96,9 +100,17 @@ After changing **`config/profile.yml`** (e.g. SWE scoring rules), re-run **`npm 
 
 **Push scores + JD files into Command Center + Drive**
 
-1. `npm run jobhunt:ai-sync-sheets` — reads **`jobhunt/ai-test/output/last-report.json`**, skips URLs already in **`INBOX_RAW`**, uploads **JDS** + **CONTEXT**, appends **INBOX_RAW**, promotes to **SHORTLIST** when **score ≥ 6.0**, reapplies **pursue** dropdown.
+1. `npm run jobhunt:ai-sync-sheets` — reads **`jobhunt/ai-test/output/last-report.json`**, skips URLs already in **`INBOX_RAW`**, uploads **JDS** + **CONTEXT**, appends **INBOX_RAW**, promotes to **SHORTLIST** when **score ≥ 6.0**, reapplies **pursue** dropdown. It prefers AI-extracted `company`/`role` and falls back to parsing `page_title` only when missing.
 2. In the sheet, set **`SHORTLIST.pursue`** as needed.
-3. `npm run jobhunt:stage2` — requires **`ANTHROPIC_API_KEY`**; downloads each **JD** from Drive, then Claude generates **`.tex` resume**, formatted **cover letter**, and **outreach email** (subject + body with salutation/closing) + **LinkedIn invite** snippet. Compile **`.tex`** locally (see `templates/cv-template.tex`). Review all copy before sending.
+3. `npm run jobhunt:stage2` — requires **`ANTHROPIC_API_KEY`**; downloads each **JD** from Drive, then Claude generates **`.tex` resume**, formatted **cover letter** (team-directed), and an **outreach email template** + **LinkedIn invite template** (both person-directed, using `Hi [Name],`). Compile **`.tex`** locally (see `templates/cv-template.tex`). Review all copy before sending.
+
+### Scoring rules (AI test path)
+
+In addition to the general fit assessment, the URL scorer applies these score-floor rules:
+
+- **SWE early-career rule**: for clearly entry-level SWE roles (0–2 years / new grad), keep `match_score >= 6` unless other factors justify lower; only score < 6 when the JD clearly requires >2 years or is mid-level+.
+- **Analyst big-tech rule**: for `role_family="ANALYST"` at a company listed in `config/priority-companies.yml`, if the JD requires **3–5 years** experience, then `match_score >= 6`.
+- **PM early-career rule**: for `role_family="PM"` roles that are clearly early-career (APM / apprentice / early career / 0–2 years), then `match_score >= 6`.
 
 > **JSON parsing of Claude responses (scoring + Stage 2 assets)** is centralized
 > in **`jobhunt/lib/claude-json.mjs`**. See [Claude JSON contract](#claude-json-contract)
@@ -259,6 +271,7 @@ deviate. See [`.env.example`](../.env.example) for the canonical list.
 | `JOBHUNT_APOLLO_BULK_MATCH_BATCH` | `10` | Apollo's hard cap for `/people/bulk_match`. |
 | `JOBHUNT_APOLLO_REVEAL_PERSONAL_EMAILS` | `0` | `1` = include personal-email reveals (extra credits + GDPR considerations). |
 | `JOBHUNT_STAGE3_DUMP_DIR` | `data/stage3` | Per-run JSON dump directory (relative to `career-ops/`). |
+| `JOBHUNT_SNAPSHOTS_DIR` | `data/snapshots` | `CONTACTS_MASTER` JSON snapshots: per-run history + rolling `contacts-master-latest.json` (relative to `career-ops/`). |
 | `JOBHUNT_STAGE3_LIMIT` | unset | Cap PURSUE rows per run (e.g. `1` for a dry-run). Failures count toward the cap. |
 | `JOBHUNT_REGENERATE_CONTACTS` | unset | `1` = re-run even for jobs that already have `CONTACTS` rows. |
 
@@ -283,8 +296,9 @@ Inspect:
 - **Drive:** `EMAIL/<company>/<job>/email-<job_id>-<contact_id>.txt` files
   exist, salutations read `Hi <FirstName>,`, and the closing block contains
   full name, phone, LinkedIn URL, and email pulled from `profile.yml`.
-- **Disk:** `career-ops/data/stage3/<runId>/` contains four JSON files per run
-  (see "Local dumps" below).
+- **Disk:** `career-ops/data/stage3/<runId>/` contains per-run JSON (see
+  "Local dumps" below). `CONTACTS_MASTER` snapshots live under
+  `career-ops/data/snapshots/` (see below).
 
 Re-running on the same job should be a no-op (`skipped_already_has_contacts++`).
 Re-running with `JOBHUNT_REGENERATE_CONTACTS=1` regenerates drafts and updates
@@ -309,9 +323,46 @@ Re-running with `JOBHUNT_REGENERATE_CONTACTS=1` regenerates drafts and updates
 
 The whole tree is gitignored (`career-ops/.gitignore` adds `data/stage3/`).
 `cleanup-test-data.mjs` does **not** touch `data/`, so dumps survive a sheet
-cleanup. To rebuild a sheet from disk, replay the rows from the most recent
-`<job_id>-contacts-rows.json` files via `appendRow('CONTACTS', row)` /
-`appendRow('CONTACTS_MASTER', row)`.
+cleanup.
+
+### CONTACTS_MASTER snapshots (`career-ops/data/snapshots/`)
+
+At the end of each Stage 3 run (after a successful `CONTACTS_MASTER` read), we
+write:
+
+- **`contacts-master-<runId>.json`** — immutable history; same `runId` as
+  `data/stage3/<runId>/` (`YYYYMMDD-HHMMSS`).
+- **`contacts-master-latest.json`** — copy of the most recent successful
+  snapshot; stable path for rebuilds.
+
+Snapshots are **not** stored under `data/stage3/<runId>/`, so a Stage 3 run
+that exits early (new run folder but no snapshot) cannot block the next
+`rebuild-contacts-master` from finding data.
+
+This directory is gitignored (`career-ops/.gitignore` adds `data/snapshots/`).
+
+### Rebuilding CONTACTS_MASTER after cleanup
+
+If you ran `cleanup` and want to preserve Stage 3 dedup (so we don’t re-spend
+Apollo credits re-revealing emails for already-known contacts), rebuild
+`CONTACTS_MASTER` from the latest on-disk snapshot.
+
+`rebuild-contacts-master-from-disk.mjs` resolves the snapshot in this order:
+`data/snapshots/contacts-master-latest.json`, then the newest
+`data/snapshots/contacts-master-<runId>.json`, then legacy
+`data/stage3/<runId>/contacts-master-snapshot.json` (for trees produced before
+this layout).
+
+```bash
+npm run jobhunt:cleanup && npm run jobhunt:bootstrap
+npm run jobhunt:rebuild-contacts-master
+```
+
+Then run Stage 3 normally:
+
+```bash
+npm run jobhunt:stage3
+```
 
 ### Apollo cost notes (basic plan steady state)
 

@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
 import { resolveAnthropicModel } from '../../integrations/anthropic/config.mjs';
 import { extractJsonObject } from './claude-json.mjs';
+import { buildEducationFromCv, loadCvSections } from './cv-resume-builder.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -81,10 +82,113 @@ export function sanitizeItemBulletText(s) {
   return out;
 }
 
+/**
+ * Like sanitizeItemBulletText(), plus escape unescaped # for LaTeX.
+ * IMPORTANT: Only use this for Claude-generated bullet/fragment text (skills + bullets),
+ * not for the full template or canonical/static LaTeX.
+ */
+function sanitizeClaudeBulletText(s) {
+  let out = sanitizeItemBulletText(s);
+  out = out.replace(/(?<!\\)#/g, '\\#');
+  return out;
+}
+
 function sanitizeTagLineThirdArg(s) {
   return String(s || '')
     .replace(/(?<!\\)\s*&\s*/g, ' and ')
     .trim();
+}
+
+/** True if `{` / `}` depth stays >= 0 and ends at 0; `\x` skips the next character. */
+export function isBraceBalanced(s) {
+  const str = String(s || '');
+  let depth = 0;
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === '\\') {
+      i++;
+      continue;
+    }
+    if (str[i] === '{') depth++;
+    else if (str[i] === '}') {
+      depth--;
+      if (depth < 0) return false;
+    }
+  }
+  return depth === 0;
+}
+
+/**
+ * Parse two braced arguments after `macroName` at each occurrence.
+ * @returns {Array<{ args: [string, string] }> | null} null if any occurrence is malformed
+ */
+function findMacroCalls(src, macroName) {
+  const out = [];
+  const re = new RegExp(`\\\\${macroName}\\b`, 'g');
+  let m;
+  while ((m = re.exec(src))) {
+    let i = m.index + m[0].length;
+    while (i < src.length && /\s/.test(src[i])) i++;
+    const a1 = scanBalancedBraceArg(src, i);
+    if (!a1) return null;
+    i = a1.end;
+    while (i < src.length && /\s/.test(src[i])) i++;
+    const a2 = scanBalancedBraceArg(src, i);
+    if (!a2) return null;
+    out.push({ args: [a1.content, a2.content] });
+    re.lastIndex = a2.end;
+  }
+  return out;
+}
+
+/** `i` must point at `{`; returns content inside braces and index after closing `}`. */
+function scanBalancedBraceArg(src, i) {
+  if (src[i] !== '{') return null;
+  let depth = 1;
+  let j = i + 1;
+  while (j < src.length && depth > 0) {
+    if (src[j] === '\\') {
+      j += 2;
+      continue;
+    }
+    if (src[j] === '{') depth++;
+    else if (src[j] === '}') depth--;
+    j++;
+  }
+  if (depth !== 0) return null;
+  return { content: src.slice(i + 1, j - 1), end: j };
+}
+
+const EDUCATION_MACROS = ['resumeEducationCertifications', 'resumeEducationCoursework'];
+
+/**
+ * Structural validation for Claude's education LaTeX fragment (coursework / cert macros).
+ */
+export function validateEducationFragment(raw) {
+  const s = String(raw || '');
+  if (!isBraceBalanced(s)) return { ok: false, reason: 'unbalanced braces' };
+  for (const macro of EDUCATION_MACROS) {
+    const calls = findMacroCalls(s, macro);
+    if (calls === null) return { ok: false, reason: `malformed ${macro}` };
+    for (const { args } of calls) {
+      if (args.length !== 2) return { ok: false, reason: `${macro} arity` };
+      for (const a of args) {
+        if (!isBraceBalanced(a)) return { ok: false, reason: `${macro} arg braces` };
+      }
+    }
+  }
+  return { ok: true };
+}
+
+/** Fix experience / extracurricular order to match resume-canonical.json (reverse-chronological). */
+function reorderToCanonical(canonicalList, includeIds) {
+  const wanted = new Set(includeIds || []);
+  return canonicalList.map((x) => x.id).filter((id) => wanted.has(id));
+}
+
+function modelOrderDiffers(modelOrder, canonicalOrder) {
+  if (!Array.isArray(modelOrder) || !Array.isArray(canonicalOrder)) return true;
+  if (modelOrder.length !== canonicalOrder.length) return true;
+  return modelOrder.some((id, idx) => id !== canonicalOrder[idx]);
 }
 
 /**
@@ -129,7 +233,7 @@ function itemsTex(bullets, indent) {
   return (bullets || [])
     .map((b) => String(b || '').trim())
     .filter(Boolean)
-    .map((b) => `${indent}\\item {${sanitizeItemBulletText(b)}}`)
+    .map((b) => `${indent}\\item {${sanitizeClaudeBulletText(b)}}`)
     .join('\n');
 }
 
@@ -247,14 +351,22 @@ function buildTemplateSectionsFromResumeBody(canonical, parsed) {
   forbidExtraListWrappers(educationRaw, 'education');
   forbidExtraListWrappers(skillsRaw, 'skills');
 
-  const education = sanitizeItemBulletText(
-    educationRaw.replace(/(?<!\\)\s*&\s*/g, ' and ')
-  );
+  const educationCheck = validateEducationFragment(educationRaw);
+  let education;
+  if (educationCheck.ok) {
+    education = sanitizeItemBulletText(
+      educationRaw.replace(/(?<!\\)\s*&\s*/g, ' and ')
+    );
+  } else {
+    education = buildEducationFromCv(loadCvSections());
+    parsed.__education_fallback_reason = educationCheck.reason;
+  }
+
   const skillsTrim = skillsRaw.trim();
   if (!/\\item\s*\{/.test(skillsTrim)) {
     throw new Error('skills must be one \\item{ ... } block (see cv-complete Technical Skills)');
   }
-  const skills = sanitizeItemBulletText(
+  const skills = sanitizeClaudeBulletText(
     skillsTrim.replace(/(?<!\\)\s*&\s*/g, ' and ')
   );
 
@@ -274,7 +386,17 @@ function buildTemplateSectionsFromResumeBody(canonical, parsed) {
     if (!allowedExtra.includes(id)) throw new Error(`Unknown extracurricular id "${id}"`);
   }
 
-  const experience = buildExperience(canonical, parsed.experience_include, parsed.experience_bullets);
+  const orderedExp = reorderToCanonical(canonical.experience, parsed.experience_include);
+  if (modelOrderDiffers(parsed.experience_include, orderedExp)) {
+    parsed.__experience_order_normalized = true;
+  }
+
+  const orderedExtra = reorderToCanonical(canonical.extracurricular, extraInc);
+  if (modelOrderDiffers(extraInc, orderedExtra)) {
+    parsed.__extracurricular_order_normalized = true;
+  }
+
+  const experience = buildExperience(canonical, orderedExp, parsed.experience_bullets);
   const projects = buildProjects(
     canonical,
     parsed.projects_include,
@@ -288,7 +410,7 @@ function buildTemplateSectionsFromResumeBody(canonical, parsed) {
   );
   const extracurricularSection = buildExtracurricular(
     canonical,
-    extraInc,
+    orderedExtra,
     parsed.extracurricular_bullets || {}
   );
 
@@ -353,7 +475,7 @@ function renderTemplate(tpl, map) {
  * Resume LaTeX body only (Education, Skills, Experience, Projects; Research and Extracurricular optional). No summary in the PDF.
  *
  * @param {import('@anthropic-ai/sdk').Anthropic} client
- * @returns {Promise<{ tex: string, model: string, resumeJson: string }>}
+ * @returns {Promise<{ tex: string, model: string, resumeJson: string, resume_warnings: string[] }>}
  */
 export async function generateResumeTex(client, { company, role, jdText, context }) {
   const model = resolveAnthropicModel('resume');
@@ -374,18 +496,19 @@ Optional (omit when they do not strengthen this application):
 Keys:
 - education: LaTeX fragment ONLY for inside the Education section's outer list — same overall structure as examples/cv-complete.tex and templates/cv-template.tex (\\resumeSubheading rows). For coursework and certifications you MUST use exactly two braced arguments each: \\resumeEducationCoursework{<label>}{<body>} and \\resumeEducationCertifications{<label>}{<body>}. The label is the short heading text only (no trailing colon; the template macros supply punctuation). The body is the remainder (e.g. comma-separated courses or certs). Do NOT include \\section{Education}, \\resumeSubHeadingListStart, or \\resumeSubHeadingListEnd.
 - skills: one complete LaTeX \\item{ ... } block as in cv-complete.tex (the template's Technical Skills section has a single list entry). Inside: multiple \\\\textbf{Category}{: skills} lines separated by \\\\.
-- experience_include: array of ids — subset of ${JSON.stringify(allowedExp)} in order you want them to appear (at least one).
+- experience_include: array of ids — subset of ${JSON.stringify(allowedExp)} (at least one). Display order is fixed by the canonical resume (reverse-chronological); the pipeline reorders your array to match. Choose which roles to include, not their order.
 - experience_bullets: object; for each id in experience_include, an array of non-empty strings (bullet bodies only, no \\item, no LaTeX section commands).
 - projects_include: subset of ${JSON.stringify(allowedProj)} (at least one), order preserved from this list when possible.
 - project_bullets: object mapping each included project id to string array (bullet bodies only).
 - project_tags: optional object; for any included project id, you may override ONLY the comma-separated tag line (third argument of \\resumeProjectHeadingLinks). If you omit an id, the default tags from the canonical resume are used. Never change project titles or URLs.
 - research_include: array of ids from ${JSON.stringify(allowedRes)}; may be [] to omit the Research section entirely if it does not strengthen the resume for this role.
 - research_bullets: object mapping each id in research_include to a non-empty string array (bullet bodies only). Omit or use {} when research_include is []. Never paraphrase paper titles; titles are fixed in the template data.
-- extracurricular_include: array of ids subset of ${JSON.stringify(allowedExtra)} (may be empty to omit the whole Extracurricular section).
+- extracurricular_include: array of ids subset of ${JSON.stringify(allowedExtra)} (may be empty to omit the whole Extracurricular section). Display order is fixed by the canonical resume; the pipeline reorders to match.
 - extracurricular_bullets: object with arrays for each id in extracurricular_include.
 
 Hard rules:
 - Do not use the "&" character anywhere in any string value; use "and" instead.
+- Never include C# in the skills section. Do not claim C# proficiency. If the JD mentions C#/.NET, emphasize transferable skills you actually have instead.
 - No LaTeX preamble, no \\usepackage, no redefinitions of resume macros.
 - Facts must match cv.md, profile.yml, and article-digest.md; do not invent employers or degrees.
 - Bullet strings are plain prose unless a macro is required; avoid raw % and $ where possible (post-processing will fix common cases).
@@ -431,12 +554,23 @@ Canonical ids:
   const sections = buildTemplateSectionsFromResumeBody(canonical, parsed);
   const resumeJson = JSON.stringify(parsed);
 
+  const resume_warnings = [];
+  if (parsed.__education_fallback_reason) {
+    resume_warnings.push(`education_fallback: ${parsed.__education_fallback_reason}`);
+  }
+  if (parsed.__experience_order_normalized) {
+    resume_warnings.push('experience_include reordered to canonical reverse-chronological order');
+  }
+  if (parsed.__extracurricular_order_normalized) {
+    resume_warnings.push('extracurricular_include reordered to canonical order');
+  }
+
   const tplPath = join(process.cwd(), 'templates', 'cv-template.tex');
   const tpl = readFileSync(tplPath, 'utf-8');
 
   const tex = renderTemplate(tpl, sections);
 
-  return { tex, model, resumeJson };
+  return { tex, model, resumeJson, resume_warnings };
 }
 
 export async function generateCoverLetter(client, { company, role, jdText, context }) {
@@ -469,12 +603,12 @@ export async function generateOutreachEmail(client, { company, role, jdText, con
   const candidate = parseCandidateFromProfileYaml(context?.profile || '');
   const signaturePreview = buildEmailSignatureBlock(candidate);
 
-  const system = `You draft a GENERAL outreach email for the ${role} role at ${company} — addressed to the team, not to a specific person. Reply with a STRICT JSON object only (no markdown), keys:
+  const system = `You draft a GENERAL outreach email template for the ${role} role at ${company} — addressed to a specific person using a placeholder, because this email will be sent to an individual contact. Reply with a STRICT JSON object only (no markdown), keys:
 - subject: one line, professional (e.g. "Interest in ${role} — ${candidate.full_name || 'the candidate'}"). Do NOT include a recipient name.
 - body: plain text email body that MUST include:
-  • Opening salutation that does NOT name a specific person — use "Dear ${company} Hiring Team," or "Dear [Team] Hiring Team," or "Hello," if uncertain. Never invent a recipient name.
+  • Opening salutation line MUST be exactly: "Hi [Name],"
   • Blank line
-  • 2–3 short paragraphs that pitch the candidate to the team broadly (no recruiter- or hiring-manager-specific language)
+  • 2–3 short paragraphs that pitch the candidate to the recipient ("you" language). Write as if the recipient is the person you're reaching out to.
   • Blank line
   • Gratitude line (e.g. "Thank you for your time and consideration.")
   • Blank line
@@ -482,7 +616,11 @@ export async function generateOutreachEmail(client, { company, role, jdText, con
 
 ${signaturePreview}
 
-Use only factual content from the candidate materials. No emojis. Do NOT add any text after the email line above. Do NOT hyperlink the LinkedIn URL — leave it as plain text.`;
+Hard rules:
+- Do NOT write "someone on your team", "anyone on your team", or "your team". This email is directed to the recipient.
+- Do NOT invent a recipient name. Always keep the literal placeholder [Name] in the salutation.
+- Use only factual content from the candidate materials.
+- No emojis. Do NOT add any text after the signature block above. Do NOT hyperlink the LinkedIn URL — leave it as plain text.`;
 
   const user = `Company: ${company}\nRole: ${role}\n\n--- JD ---\n${jdText}\n\n--- profile ---\n${context.profile}\n\n--- cv ---\n${context.cv}`;
 
@@ -505,12 +643,13 @@ Use only factual content from the candidate materials. No emojis. Do NOT add any
 
 export async function generateLinkedInInvite(client, { company, role, jdText, context }) {
   const model = resolveAnthropicModel('linkedin');
-  const system = `Write a GENERAL LinkedIn connection note UNDER 280 characters that the candidate (Pratyush) can send to ANY member of the ${company} team about the ${role} role — not personalized to a specific recruiter or hiring manager.
+  const system = `Write a GENERAL LinkedIn connection note UNDER 280 characters that the candidate (Pratyush) can send to an individual person at ${company} about the ${role} role. This is a template that will be reused across recipients.
 Rules:
 - Plain text, no hashtags, no emojis.
 - Start with "Hi [Name]," — use the literal placeholder "[Name]" because this draft will be reused across recipients.
 - One or two short sentences max.
-- Make it clear Pratyush is reaching out about ${role} at ${company} and is open to chatting with anyone on the team.
+- Make it clear Pratyush is reaching out about ${role} at ${company} and would love to connect / chat with YOU.
+- Do NOT say "someone on your team" or "anyone on your team".
 - Do NOT sound like the recipient is reaching out to Pratyush.
 - End with "— Pratyush".`;
 

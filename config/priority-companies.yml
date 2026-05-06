@@ -2,32 +2,131 @@
 #
 # Companies listed here use JOBHUNT_STAGE3_PER_KIND_PRIORITY_MAX as the per-kind
 # pagination ceiling instead of JOBHUNT_STAGE3_PER_KIND_DEFAULT_MAX. Match is
-# case-insensitive on `name` against SHORTLIST.company; `domain` is optional and
-# only used to override the auto-guessed Apollo organization domain when
-# present (i.e. it is fed straight into mixed_people/api_search's
-# q_organization_domains_list).
+# case-insensitive on `name` against SHORTLIST.company.
 #
-# Edit freely — Stage 3 reloads this file every run. Keep entries focused on
-# companies where you actually want maximum recruiter / hiring-manager surface
-# area; everything else gracefully falls back to the default cap.
+# Each row may use either:
+#   - domain: "example.com"  — single Apollo organization domain
+#   - domains: ["a.com", "b.com"]  — multiple domains for q_organization_domains_list
+# If both are set, `domains` wins.
+#
+# Edit freely — Stage 3 reloads this file every run.
 
 priority_companies:
+  # --- Microsoft ---
   - { name: "Microsoft", domain: "microsoft.com" }
+  - { name: "Microsoft Azure", domain: "microsoft.com" }
+  - { name: "Xbox", domain: "microsoft.com" }
+  - { name: "Microsoft Research", domain: "microsoft.com" }
+  - name: "GitHub"
+    domains: ["github.com", "microsoft.com"]
+
+  # --- Core list (non-Microsoft) ---
   - { name: "Stripe", domain: "stripe.com" }
   - { name: "Snowflake", domain: "snowflake.com" }
   - { name: "Databricks", domain: "databricks.com" }
+
+  # --- Google / Alphabet ---
   - { name: "Google", domain: "google.com" }
+  - { name: "Alphabet", domain: "google.com" }
+  - { name: "Google Cloud", domain: "google.com" }
+  - { name: "Google DeepMind", domain: "google.com" }
+  - name: "YouTube"
+    domains: ["youtube.com", "google.com"]
+  - { name: "Waymo", domain: "waymo.com" }
+  - { name: "Verily", domain: "verily.com" }
+  - { name: "Wing", domain: "wing.com" }
+  - { name: "Fitbit", domain: "google.com" }
+  - { name: "Nest", domain: "google.com" }
+
+  # --- Amazon ---
   - { name: "Amazon", domain: "amazon.com" }
+  - { name: "Amazon Robotics", domain: "amazon.com" }
+  - { name: "Amazon Web Services", domain: "amazon.com" }
+  - { name: "Amazon Prime", domain: "amazon.com" }
+  - { name: "Amazon Music", domain: "amazon.com" }
+  - { name: "Amazon Video", domain: "amazon.com" }
+  - { name: "Amazon Prime Video", domain: "amazon.com" }
+  - { name: "Amazon Prime Music", domain: "amazon.com" }
+  - { name: "Amazon Prime Reading", domain: "amazon.com" }
+  - { name: "Amazon Prime Now", domain: "amazon.com" }
+  - { name: "Amazon Prime Instant Video", domain: "amazon.com" }
+  - { name: "AWS", domain: "amazon.com" }
+  - name: "Twitch"
+    domains: ["twitch.tv", "amazon.com"]
+  - name: "Ring"
+    domains: ["ring.com", "amazon.com"]
+  - name: "IMDb"
+    domains: ["imdb.com", "amazon.com"]
+  - name: "Audible"
+    domains: ["audible.com", "amazon.com"]
+  - name: "Whole Foods Market"
+    domains: ["wholefoodsmarket.com", "amazon.com"]
+  - name: "Zappos"
+    domains: ["zappos.com", "amazon.com"]
+  - { name: "Project Kuiper", domain: "amazon.com" }
+  - { name: "Amazon Pharmacy", domain: "amazon.com" }
+  - { name: "Amazon Logistics", domain: "amazon.com" }
+  - { name: "MGM Studios", domain: "amazon.com" }
+
+  # --- Meta ---
   - { name: "Meta", domain: "meta.com" }
+  - name: "Facebook"
+    domains: ["facebook.com", "meta.com", "fb.com"]
+  - name: "Instagram"
+    domains: ["instagram.com", "meta.com"]
+  - name: "WhatsApp"
+    domains: ["whatsapp.com", "meta.com"]
+  - { name: "Reality Labs", domain: "meta.com" }
+  - { name: "Oculus", domain: "meta.com" }
+  - { name: "Threads", domain: "meta.com" }
+
+  # --- Apple ---
   - { name: "Apple", domain: "apple.com" }
+  - { name: "Beats by Dre", domain: "apple.com" }
+  - { name: "Apple Music", domain: "apple.com" }
+
   - { name: "Netflix", domain: "netflix.com" }
   - { name: "Nvidia", domain: "nvidia.com" }
+
+  # --- Salesforce ---
   - { name: "Salesforce", domain: "salesforce.com" }
+  - name: "Slack"
+    domains: ["slack.com", "salesforce.com"]
+  - name: "Tableau"
+    domains: ["tableau.com", "salesforce.com"]
+  - name: "MuleSoft"
+    domains: ["mulesoft.com", "salesforce.com"]
+  - { name: "Heroku", domain: "salesforce.com" }
+  - { name: "Quip", domain: "salesforce.com" }
+
+  # --- Adobe ---
   - { name: "Adobe", domain: "adobe.com" }
+  - { name: "Adobe Experience Cloud", domain: "adobe.com" }
+  - name: "Frame.io"
+    domains: ["frame.io", "adobe.com"]
+
+  # --- Oracle ---
   - { name: "Oracle", domain: "oracle.com" }
+  - name: "NetSuite"
+    domains: ["netsuite.com", "oracle.com"]
+  - name: "Cerner"
+    domains: ["cerner.com", "oracle.com"]
+  - { name: "MICROS", domain: "oracle.com" }
+
+  # --- IBM ---
   - { name: "IBM", domain: "ibm.com" }
+  - name: "Red Hat"
+    domains: ["redhat.com", "ibm.com"]
+  - { name: "IBM Consulting", domain: "ibm.com" }
+
   - { name: "LinkedIn", domain: "linkedin.com" }
+
+  # --- Uber ---
   - { name: "Uber", domain: "uber.com" }
+  - { name: "Uber Eats", domain: "uber.com" }
+  - { name: "Postmates", domain: "uber.com" }
+  - { name: "Drizly", domain: "uber.com" }
+
   - { name: "Airbnb", domain: "airbnb.com" }
   - { name: "Pinterest", domain: "pinterest.com" }
   - { name: "Shopify", domain: "shopify.com" }

@@ -258,6 +258,7 @@ try {
         jd_drive_link: jdLink,
         generated_at: now.toISOString(),
         jd_excerpt: jdText.slice(0, 2500),
+        resume_warnings: resumeOut.resume_warnings?.length ? resumeOut.resume_warnings : undefined,
         models: {
           resume: resumeOut.model,
           cover_letter: coverOut.model,
@@ -342,6 +343,7 @@ try {
         resumeLink,
         coverLink,
         emailLink,
+        resume_warnings: resumeOut.resume_warnings || [],
         models: {
           resume: resumeOut.model,
           resume_summary: resumeSummaryOut.model,

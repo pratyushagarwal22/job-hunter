@@ -14,7 +14,9 @@
  *      Claude call when `JOBHUNT_STAGE3_ENRICH_ONLY=1` (default).
  *   5) Appends one CONTACTS row per (job_id, contact_id) and upserts CONTACTS_MASTER.
  *   6) Writes per-run dumps to `data/stage3/<runId>/` so a `cleanup` that wipes
- *      the sheet does not lose the discovered contacts.
+ *      the sheet does not lose the discovered contacts. Writes `CONTACTS_MASTER`
+ *      disk snapshots to `data/snapshots/` (history + latest pointer), decoupled
+ *      from per-run folders so early-exit runs cannot starve rebuild.
  *
  * It does NOT send anything. Drafts only.
  *
@@ -32,6 +34,7 @@
  *   JOBHUNT_APOLLO_BULK_MATCH_BATCH=10          Apollo hard cap is 10
  *   JOBHUNT_APOLLO_REVEAL_PERSONAL_EMAILS=0     1 = reveal personal emails too (extra credits)
  *   JOBHUNT_STAGE3_DUMP_DIR=data/stage3         relative to career-ops/
+ *   JOBHUNT_SNAPSHOTS_DIR=data/snapshots        CONTACTS_MASTER JSON snapshots (relative)
  *   JOBHUNT_STAGE3_LIMIT=                       cap PURSUE rows per run (dry-run)
  *   JOBHUNT_REGENERATE_CONTACTS=                1 = re-run for jobs already in CONTACTS
  *
@@ -130,6 +133,7 @@ const BULK_MATCH_BATCH = Math.min(
 const REVEAL_PERSONAL_EMAILS =
   String(process.env.JOBHUNT_APOLLO_REVEAL_PERSONAL_EMAILS || '').trim() === '1';
 const DUMP_DIR_REL = process.env.JOBHUNT_STAGE3_DUMP_DIR || 'data/stage3';
+const SNAPSHOTS_DIR_REL = process.env.JOBHUNT_SNAPSHOTS_DIR || 'data/snapshots';
 
 const SLEEP_APOLLO_MS = 1200;
 
@@ -189,6 +193,15 @@ function dumpJson(filename, payload) {
   return path;
 }
 
+/** Writes CONTACTS_MASTER snapshot JSON under `data/snapshots/` (not per-run `stage3/`). */
+function writeSnapshot(filename, payload) {
+  const dir = join(process.cwd(), SNAPSHOTS_DIR_REL);
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  const path = join(dir, filename);
+  writeFileSync(path, JSON.stringify(payload, null, 2) + '\n', 'utf-8');
+  return path;
+}
+
 function loadPriorityCompanies() {
   const path = join(process.cwd(), 'config', 'priority-companies.yml');
   if (!existsSync(path)) return [];
@@ -199,9 +212,20 @@ function loadPriorityCompanies() {
       .map((entry) => {
         if (!entry || typeof entry !== 'object') return null;
         const name = typeof entry.name === 'string' ? entry.name.trim() : '';
-        const domain = typeof entry.domain === 'string' ? entry.domain.trim() : '';
         if (!name) return null;
-        return { name, name_lc: name.toLowerCase(), domain: domain || '' };
+        const domainSingle = typeof entry.domain === 'string' ? entry.domain.trim() : '';
+        let domains = [];
+        if (Array.isArray(entry.domains) && entry.domains.length > 0) {
+          domains = entry.domains.map((d) => String(d || '').trim()).filter(Boolean);
+        } else if (domainSingle) {
+          domains = [domainSingle];
+        }
+        return {
+          name,
+          name_lc: name.toLowerCase(),
+          domain: domains[0] || domainSingle || '',
+          domains,
+        };
       })
       .filter(Boolean);
   } catch (err) {
@@ -216,9 +240,11 @@ function pickPriorityEntry(priorityList, company) {
   return priorityList.find((p) => p.name_lc === target) || null;
 }
 
-function resolveDomainForCompany(company, priorityEntry) {
-  if (priorityEntry?.domain) return priorityEntry.domain;
-  return guessDomainFromCompany(company) || '';
+/** Apollo org domains for api_search: priority YAML `domains` / `domain`, else guessed slug domain. */
+function resolveApolloDomainsForCompany(company, priorityEntry) {
+  if (priorityEntry?.domains?.length) return priorityEntry.domains;
+  const g = guessDomainFromCompany(company);
+  return g ? [g] : [];
 }
 
 function pickCapForCompany(priorityEntry) {
@@ -291,7 +317,7 @@ function buildCurlExample(query) {
 
 /* ───────────────────────────── apollo discovery ───────────────────────── */
 
-async function paginateApiSearch({ domain, titles, seniorities, kind, cap }) {
+async function paginateApiSearch({ domains, titles, seniorities, kind, cap }) {
   const collected = [];
   const seen = new Set();
   let page = 1;
@@ -301,7 +327,7 @@ async function paginateApiSearch({ domain, titles, seniorities, kind, cap }) {
     let res;
     try {
       res = await searchPeopleApiSearch({
-        domain,
+        domains,
         titles,
         seniorities,
         locations: PERSON_LOCATIONS,
@@ -549,22 +575,38 @@ try {
     })
   );
   const masterRows = masterRes.data.values || [];
-  const masterByApolloId = new Map(); // apollo_person_id -> { rowIndex, contactId }
-  const masterByLinkedIn = new Map(); // linkedin (lc) -> { rowIndex, contactId }
-  const masterByEmail = new Map(); // email (lc) -> { rowIndex, contactId }
-  const masterByContactId = new Map(); // contactId -> { rowIndex }
+  const masterByApolloId = new Map(); // apollo_person_id -> { rowIndex, contactId, master }
+  const masterByLinkedIn = new Map(); // linkedin (lc) -> { rowIndex, contactId, master }
+  const masterByEmail = new Map(); // email (lc) -> { rowIndex, contactId, master }
+  const masterByContactId = new Map(); // contactId -> { rowIndex, master }
   for (let i = 1; i < masterRows.length; i++) {
     const r = masterRows[i];
     const cid = getCell(r, 0);
-    const li = getCell(r, 5).toLowerCase();
-    const em = getCell(r, 6).toLowerCase();
+    const name = getCell(r, 3);
+    const title = getCell(r, 4);
+    const liRaw = getCell(r, 5);
+    const emRaw = getCell(r, 6);
+    const email_source = getCell(r, 7);
+    const email_confidence = getCell(r, 8);
+    const li = liRaw.toLowerCase();
+    const em = emRaw.toLowerCase();
     const notes = getCell(r, 11);
     const apolloId = extractApolloIdFromNotes(notes);
     const rowIndex = i + 1;
-    if (cid) masterByContactId.set(cid, { rowIndex });
-    if (apolloId) masterByApolloId.set(apolloId, { rowIndex, contactId: cid });
-    if (li) masterByLinkedIn.set(li, { rowIndex, contactId: cid });
-    if (em) masterByEmail.set(em, { rowIndex, contactId: cid });
+    const master = {
+      contact_id: cid,
+      name,
+      title,
+      linkedin_url: liRaw,
+      email: emRaw,
+      email_source,
+      email_confidence,
+      apollo_person_id: apolloId,
+    };
+    if (cid) masterByContactId.set(cid, { rowIndex, master });
+    if (apolloId) masterByApolloId.set(apolloId, { rowIndex, contactId: cid, master });
+    if (li) masterByLinkedIn.set(li, { rowIndex, contactId: cid, master });
+    if (em) masterByEmail.set(em, { rowIndex, contactId: cid, master });
   }
 
   /* ------------ Drive setup ------------ */
@@ -599,13 +641,14 @@ try {
 
     const priorityEntry = pickPriorityEntry(priorityCompanies, company);
     const cap = pickCapForCompany(priorityEntry);
-    const domain = resolveDomainForCompany(company, priorityEntry);
+    const domains = resolveApolloDomainsForCompany(company, priorityEntry);
 
     const jobReport = {
       job_id,
       company,
       role,
-      domain,
+      domain: domains[0] || '',
+      domains,
       cap_per_kind: cap,
       priority_company: !!priorityEntry,
       kind_counts: { RECRUITER: 0, HIRING_MANAGER: 0 },
@@ -619,7 +662,7 @@ try {
     };
 
     try {
-      if (!domain) {
+      if (!domains.length) {
         jobReport.warnings.push('No domain resolved (priority-yaml missing and guess failed); skipping.');
         report.processed++;
         processedJobs++;
@@ -632,13 +675,13 @@ try {
          live request the script makes (one source of truth via
          `buildApiSearchQuery`). */
       const recruiterParams = buildApiSearchQuery({
-        domain,
+        domains,
         titles: RECRUITER_TITLES,
         locations: PERSON_LOCATIONS,
         emailStatuses: CONTACT_EMAIL_STATUS,
       });
       const hmParams = buildApiSearchQuery({
-        domain,
+        domains,
         titles: roleToHmTitleKeywords(role),
         seniorities: HM_SENIORITIES,
         locations: PERSON_LOCATIONS,
@@ -647,7 +690,7 @@ try {
 
       /* ---- Apollo discovery: recruiter pass ---- */
       const recruiters = await paginateApiSearch({
-        domain,
+        domains,
         titles: RECRUITER_TITLES,
         seniorities: undefined,
         kind: 'RECRUITER',
@@ -657,7 +700,7 @@ try {
 
       /* ---- Apollo discovery: hiring-manager pass (titles + seniority) ---- */
       const hms = await paginateApiSearch({
-        domain,
+        domains,
         titles: roleToHmTitleKeywords(role),
         seniorities: HM_SENIORITIES,
         kind: 'HIRING_MANAGER',
@@ -679,7 +722,7 @@ try {
       const zeroResults = recruiters.length === 0 && hms.length === 0;
       jobReport.zero_results = zeroResults;
       if (zeroResults) {
-        report.zero_result_jobs.push({ job_id, company, domain });
+        report.zero_result_jobs.push({ job_id, company, domain: domains[0] || '', domains });
       }
 
       const allCandidatesRaw = [...recruiters, ...hms];
@@ -704,7 +747,8 @@ try {
         job_id,
         company,
         role,
-        domain,
+        domain: domains[0] || '',
+        domains,
         cap_per_kind: cap,
         priority_company: !!priorityEntry,
         recruiter_count: recruiters.length,
@@ -873,8 +917,23 @@ try {
           jobReport.contacts.push({ contact_id, kind: cand.kind, status: 'skipped_existing_in_job' });
           continue;
         }
+        const m = existingMaster.master || {};
+        const hydrated = {
+          ...cand,
+          name: cand.name || m.name || '',
+          first_name: cand.first_name || (m.name ? m.name.split(/\s+/)[0] : ''),
+          title: cand.title || m.title || '',
+          linkedin_url: cand.linkedin_url || m.linkedin_url || '',
+          email: cand.email || m.email || '',
+          email_source: cand.email_source || m.email_source || (cand.email || m.email ? 'apollo' : ''),
+          email_confidence:
+            cand.email_confidence ||
+            m.email_confidence ||
+            (cand.email || m.email ? 'high' : ''),
+          apollo_person_id: cand.apollo_person_id || m.apollo_person_id || '',
+        };
         const built = await buildAndAppendContact({
-          person: cand,
+          person: hydrated,
           contact_id,
           isMasterCreate: false,
           existingMasterRowIndex: existingMaster.rowIndex,
@@ -992,6 +1051,32 @@ try {
   report.error = err?.message || String(err);
 }
 
+// Snapshot CONTACTS_MASTER to disk so it can be rebuilt after cleanup.
+try {
+  const masterSnapRes = await withGoogleApi('sheetsRead', () =>
+    sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: 'CONTACTS_MASTER!A1:L',
+    })
+  );
+  const values = masterSnapRes.data.values || [];
+  const payload = {
+    fetched_at: new Date().toISOString(),
+    run_id: runId,
+    values,
+  };
+  const historyPath = writeSnapshot(`contacts-master-${runId}.json`, payload);
+  const latestPath = writeSnapshot('contacts-master-latest.json', payload);
+  report.contacts_master_snapshot = {
+    ok: true,
+    path: latestPath,
+    history_path: historyPath,
+    rows: Math.max(0, values.length - 1),
+  };
+} catch (err) {
+  report.contacts_master_snapshot = { ok: false, error: err?.message || String(err) };
+}
+
 report.google_api_metrics = getGoogleApiMetrics();
 dumpJson('run-summary.json', report);
 console.log(JSON.stringify(report, null, 2));
@@ -1092,7 +1177,7 @@ async function buildAndAppendContact({
     person.title || '',
     person.linkedin_url || '',
     person.email || '',
-    person.email ? 'apollo' : '',
+    person.email ? person.email_source || 'apollo' : '',
     person.email ? person.email_confidence || '' : '',
     emailLink,
     inviteText,
@@ -1126,7 +1211,7 @@ async function buildAndAppendContact({
       person.title || '',
       person.linkedin_url || '',
       person.email || '',
-      person.email ? 'apollo' : '',
+      person.email ? person.email_source || 'apollo' : '',
       person.email ? person.email_confidence || '' : '',
       iso,
       job_id,
@@ -1141,16 +1226,27 @@ async function buildAndAppendContact({
     // Keep dedup maps consistent for further candidates in this run. The
     // batched flush comes after both loops, so subsequent candidates in the
     // same job must see this contact_id as already-claimed.
-    masterByContactId.set(contact_id, { rowIndex: -1 });
+    const master = {
+      contact_id,
+      name: person.name || '',
+      title: person.title || '',
+      linkedin_url: person.linkedin_url || '',
+      email: person.email || '',
+      email_source: person.email ? person.email_source || 'apollo' : '',
+      email_confidence: person.email ? person.email_confidence || '' : '',
+      apollo_person_id: person.apollo_person_id || '',
+    };
+    masterByContactId.set(contact_id, { rowIndex: -1, master });
     if (person.apollo_person_id)
-      masterByApolloId.set(person.apollo_person_id, { rowIndex: -1, contactId: contact_id });
+      masterByApolloId.set(person.apollo_person_id, { rowIndex: -1, contactId: contact_id, master });
     if (person.linkedin_url)
       masterByLinkedIn.set(person.linkedin_url.toLowerCase(), {
         rowIndex: -1,
         contactId: contact_id,
+        master,
       });
     if (person.email)
-      masterByEmail.set(person.email.toLowerCase(), { rowIndex: -1, contactId: contact_id });
+      masterByEmail.set(person.email.toLowerCase(), { rowIndex: -1, contactId: contact_id, master });
   } else if (existingMasterRowIndex && existingMasterRowIndex > 0) {
     // Queue last-seen / last-job-id update; flushed via values.batchUpdate.
     pendingMasterUpdates.push({
