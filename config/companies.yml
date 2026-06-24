@@ -1,0 +1,16 @@
+# Company list for Apollo (used for discovery/enrichment batching).
+#
+# For now, Stage 3 still primarily uses `config/priority-companies.yml` for caps/domains,
+# but this file exists so you can later switch to a single canonical source.
+#
+# If you add a company, prefer `domains` over `domain` (Apollo expects organization domain lists).
+
+companies:
+  - { name: "Google", domains: ["google.com"] }
+  - { name: "Microsoft", domains: ["microsoft.com"] }
+  - { name: "Amazon", domains: ["amazon.com"] }
+  - { name: "Meta", domains: ["meta.com"] }
+  - { name: "Databricks", domains: ["databricks.com"] }
+  - { name: "Snowflake", domains: ["snowflake.com"] }
+  - { name: "Stripe", domains: ["stripe.com"] }
+

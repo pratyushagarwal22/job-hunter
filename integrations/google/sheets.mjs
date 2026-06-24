@@ -5,7 +5,6 @@ import { withGoogleApi } from './rate-limit.mjs';
 export const REQUIRED_TABS = [
   'INBOX_RAW',
   'SHORTLIST',
-  'CONTACTS',
   'ASSETS',
   'OUTREACH',
   'PIPELINE_STATUS',

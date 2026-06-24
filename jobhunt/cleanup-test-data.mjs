@@ -24,7 +24,6 @@ try {
   const tabs = [
     'INBOX_RAW',
     'SHORTLIST',
-    'CONTACTS',
     'ASSETS',
     'OUTREACH',
     'PIPELINE_STATUS',
@@ -43,7 +42,7 @@ try {
   const bucketIdByName = new Map((sub.folders || []).map(f => [f.name, f.id]));
 
   // Full reset: delete EVERYTHING inside buckets, keep the bucket folders themselves.
-  const buckets = ['RESUME', 'COVERLETTER', 'EMAIL', 'JDS', 'CONTEXT'];
+  const buckets = ['RESUME', 'COVERLETTER', 'EMAIL', 'JDS', 'CONTEXT', 'OUTREACH'];
   report.drive.bucketResets = {};
   for (const b of buckets) {
     const id = bucketIdByName.get(b);

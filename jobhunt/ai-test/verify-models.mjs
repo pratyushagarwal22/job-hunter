@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * One short API call per task-specific model env (score, linkedin, resume, resume_summary, outreach).
+ * One short API call per task-specific model env (score, linkedin, resume, resume_summary, outreach, cover_letter).
  * Confirms each ANTHROPIC_MODEL_* id is accepted by the API.
  *
  *   npm run jobhunt:ai-verify-models
@@ -13,7 +13,7 @@ import { createAnthropicClient, resolveAnthropicModel } from '../../integrations
 
 await loadDotenv();
 
-const tasks = /** @type {const} */ (['score', 'linkedin', 'resume', 'resume_summary', 'outreach']);
+const tasks = /** @type {const} */ (['score', 'linkedin', 'resume', 'resume_summary', 'outreach', 'cover_letter']);
 const report = { ok: true, checks: [] };
 
 try {

@@ -21,14 +21,19 @@
     "jobhunt:seed-8": "node jobhunt/seed-shortlist-8.mjs",
     "jobhunt:e2e": "node jobhunt/seed-shortlist-8.mjs",
     "jobhunt:stage2": "node jobhunt/stage2-generate-assets.mjs",
-    "jobhunt:stage3": "node jobhunt/stage3-outreach-contacts.mjs",
+    "jobhunt:stage3": "node jobhunt/stage3-contactmaster-outreach.mjs",
+    "jobhunt:stage4-enrich": "node jobhunt/stage4/stage4-enrich-from-linkedin-profiles.mjs",
+    "jobhunt:stage4-sync": "node jobhunt/stage4/stage4-sync-to-contacts-master.mjs",
+    "jobhunt:dump-contacts-master": "node jobhunt/dump-contacts-master.mjs",
     "jobhunt:rebuild-contacts-master": "node jobhunt/rebuild-contacts-master-from-disk.mjs",
     "jobhunt:claude-ping": "node jobhunt/claude-ping.mjs",
     "jobhunt:ai-score-urls": "node jobhunt/ai-test/score-from-urls.mjs",
     "jobhunt:ai-verify-models": "node jobhunt/ai-test/verify-models.mjs",
     "jobhunt:ai-sync-sheets": "node jobhunt/ai-test/sync-report-to-command-center.mjs",
     "jobhunt:ai-debug-latex-projects": "node jobhunt/ai-test/debug-latex-projects.mjs",
-    "jobhunt:resume-pdf": "node jobhunt/generate-resume-pdf.mjs"
+    "jobhunt:resume-pdf": "node jobhunt/generate-resume-pdf.mjs",
+    "jobhunt:reconcile-companies-sources": "node jobhunt/reconcile-companies-sources.mjs",
+    "companies:from-portals": "node scripts/extract-companies-from-portals.mjs"
   },
   "keywords": [
     "ai",

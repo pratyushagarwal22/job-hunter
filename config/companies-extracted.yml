@@ -1,0 +1,7 @@
+# Companies already enriched / last-enriched-at tracking (optional).
+#
+# This is a lightweight companion to snapshots so you can avoid re-running
+# Apollo discovery for companies you already processed.
+
+companies_extracted: []
+

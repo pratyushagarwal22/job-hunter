@@ -87,7 +87,7 @@ Does **not** modify the Command Center e2e flow. Uses Playwright to open **publi
 
 1. `cp jobhunt/ai-test/urls.example.txt jobhunt/ai-test/urls.txt` and add **8–10 URLs** (one per line).
 2. Install browser once: `npx playwright install chromium`
-3. Optional: `npm run jobhunt:ai-verify-models` — confirms all four **`ANTHROPIC_MODEL_{SCORE,LINKEDIN,RESUME,OUTREACH}`** ids work (or defaults).
+3. Optional: `npm run jobhunt:ai-verify-models` — confirms all six per-task model ids work (or defaults): **`ANTHROPIC_MODEL_{SCORE,LINKEDIN,RESUME,RESUME_SUMMARY,OUTREACH,COVER_LETTER}`** (see **`integrations/anthropic/config.mjs`**).
 4. Run: **`npm run jobhunt:ai-score-urls`** — writes **`jobhunt/ai-test/output/last-report.json`** (gitignored). Each scored row includes:
    - `match_score` (0–10), `rationale`, `page_quality`
    - **`company`**, **`role`** (AI-extracted from the scraped JD text)
@@ -106,9 +106,10 @@ After changing **`config/profile.yml`** (e.g. SWE scoring rules), re-run **`npm 
 
 ### Scoring rules (AI test path)
 
-In addition to the general fit assessment, the URL scorer applies these score-floor rules:
+In addition to the general fit assessment, the URL scorer applies these score-floor rules (defined in **`jobhunt/lib/scoring-prompt.mjs`**, synced with **`config/profile.yml`** → `ai_evaluation`):
 
 - **SWE early-career rule**: for clearly entry-level SWE roles (0–2 years / new grad), keep `match_score >= 6` unless other factors justify lower; only score < 6 when the JD clearly requires >2 years or is mid-level+.
+- **Cloud / data-platform SWE rule**: for `role_family="SWE"` on cloud infrastructure, data platform, analytics infrastructure, distributed systems for data, or ML/data serving teams, keep `match_score >= 6` unless hard blockers apply (clearance, authorization, zero overlap).
 - **Analyst big-tech rule**: for `role_family="ANALYST"` at a company listed in `config/priority-companies.yml`, if the JD requires **3–5 years** experience, then `match_score >= 6`.
 - **PM early-career rule**: for `role_family="PM"` roles that are clearly early-career (APM / apprentice / early career / 0–2 years), then `match_score >= 6`.
 
@@ -121,7 +122,7 @@ In addition to the general fit assessment, the URL scorer applies these score-fl
 Every Claude prompt in this repo that expects a structured response (the
 URL scorer, Stage 2 resume / outreach / LinkedIn generators, and the future
 **Stage 1** that will replace `ai-score-urls` + `ai-sync-sheets` with a
-direct `portals.yml → INBOX_RAW/SHORTLIST` ingest) instructs the model to
+direct `config/portals.yml → INBOX_RAW/SHORTLIST` ingest) instructs the model to
 emit **a single JSON object** as its reply. The model's actual output, in
 practice, can still arrive in any of these shapes:
 
@@ -148,7 +149,7 @@ Current consumers:
 - [`jobhunt/lib/claude-asset-generators.mjs`](lib/claude-asset-generators.mjs)
   — Stage 2 resume, outreach email, and LinkedIn invite generators
 
-**Stage 1** (the planned `portals.yml`-driven ingestion that supersedes
+**Stage 1** (the planned `config/portals.yml`-driven ingestion that supersedes
 `ai-score-urls` / `ai-sync-sheets`) will reuse this same util — do not
 re-introduce a local copy. If a new caller needs additional tolerance
 (e.g. JSON arrays at the top level), add it here, not in the caller.
@@ -181,16 +182,15 @@ node scripts/diagnostics/claude-json-smoke.mjs
 Exit 0 = all fixtures pass. Add a new fixture here whenever a real Claude
 response surfaces a parsing edge case.
 
-## Stage 3 — Apollo enrich-only contact discovery
+## Stage 3 — Contact discovery + `CONTACTS_MASTER` outreach drafts
 
 `npm run jobhunt:stage3` runs **after** Stage 2 has generated `ASSETS` for the
-PURSUE jobs you care about. It enriches `CONTACTS` and `CONTACTS_MASTER` and
-writes per-contact email + LinkedIn invite drafts to Drive — **never sends**.
+PURSUE jobs you care about. It enriches **only** `CONTACTS_MASTER` (source of
+truth) and writes per-contact email + LinkedIn invite drafts to Drive — **never
+sends**.
 
-The flow is **enrich-only by default**: Stage 3 reuses the Stage 2 outreach
-email body and LinkedIn invite, swapping only the salutation (and `[Name]`
-placeholder) per recipient. There is no per-contact Claude call in this mode,
-which keeps the run fast and predictable.
+Stage 3 is template-driven (no job-specific per-contact Claude calls by
+default), which keeps the run fast and predictable.
 
 ### Prerequisites
 
@@ -202,11 +202,8 @@ which keeps the run fast and predictable.
 - Optional: edit [config/priority-companies.yml](../config/priority-companies.yml)
   to bump per-kind caps for specific companies. Match is case-insensitive on
   `name`; `domain` (when present) overrides the auto-guessed Apollo domain.
-- Sheet schema: `CONTACTS` has 15 columns (`contact_id, job_id, company, role,
-  contact_kind, contact_name, contact_title, linkedin_url, email,
-  email_source, email_confidence, email_drive_link, linkedin_invite_text,
-  status, notes`); `CONTACTS_MASTER` has 12 columns. Source of truth lives in
-  [jobhunt/command-center-schema.mjs](command-center-schema.mjs).
+- Sheet schema: `CONTACTS_MASTER` is the sole contact source of truth. The
+  schema lives in [jobhunt/command-center-schema.mjs](command-center-schema.mjs).
   - **`npm run jobhunt:bootstrap`** rewrites only row 1 to that schema (no-op
     when already correct).
   - **`npm run jobhunt:cleanup`** clears data rows (`A2:ZZ`) only — never the
@@ -215,8 +212,8 @@ which keeps the run fast and predictable.
 
 ### What it does
 
-1. Read **`SHORTLIST`** for `pursue == 'PURSUE'` rows that have an `ASSETS` row,
-   plus the existing `CONTACTS` and `CONTACTS_MASTER` for dedup.
+1. Read **`SHORTLIST`** for `pursue == 'PURSUE'` rows and the existing
+   `CONTACTS_MASTER` for dedup.
 2. For each job: resolve a primary domain (priority-yaml override → naive
    `companyname.com` guess) — no `/organizations/enrich` call.
 3. **Discovery (credit-free):** call Apollo `/v1/mixed_people/api_search`
@@ -233,27 +230,15 @@ which keeps the run fast and predictable.
    1. `apollo_person_id` (parsed out of `CONTACTS_MASTER.notes`)
    2. `linkedin_url` (lowercased)
    3. `email` (lowercased)
-   Existing master rows are reused (their `contact_id` is reapplied to the new
-   `CONTACTS` row); only net-new survivors get a fresh `CT-<YYYYMMDD>-<8-hex>`.
-5. **Email reveal (credit-metered):** for net-new survivors without an email,
-   call `/v1/people/bulk_match` in batches of 10 (≈ 1 credit per net-new
-   email). Survivors that bulk_match doesn't fill in fall back to a single
-   `/v1/people/match` call.
-6. **Per-contact draft (no Claude):** for every contact, the script
-   - reuses Stage 2's email body, replaces the first salutation line with
-     `Hi <FirstName>,` (or `Hi there,` if name absent), and re-applies the
-     deterministic signature from `config/profile.yml` (idempotent);
-   - replaces `[Name]` in Stage 2's LinkedIn invite with the first name (or
-     leaves the placeholder if absent);
-   - writes the email to Drive at
-     `EMAIL/<company>/<job>/email-<job_id>-<contact_id>.txt` and stamps the
-     URL into `CONTACTS.email_drive_link`;
-   - inlines the invite text into `CONTACTS.linkedin_invite_text`.
-7. Appends a **`CONTACTS`** row per (job, contact); appends a
-   **`CONTACTS_MASTER`** row for new contacts (with
-   `notes = "apollo_person_id=<id>; kind=<RECRUITER|HIRING_MANAGER>"`),
-   or updates `last_contacted_at` / `last_contacted_job_id` on the existing
-   master row.
+   Existing master rows are reused; only net-new survivors get a fresh
+   `CT-<YYYYMMDD>-<8-hex>`.
+5. **Email reveal (credit-metered):** for net-new survivors only (known
+   contacts skip `bulk_match`), call `/v1/people/bulk_match` in batches of 10
+   (≈ 1 credit per net-new email).
+6. **Per-contact drafts:** for every contact, Stage 3 can create Drive drafts
+   under `OUTREACH/<COMPANY>/<ROLE_TYPE>/<person_email>/...` (when drafts are
+   enabled) and store the Drive link + LinkedIn text in `CONTACTS_MASTER`.
+7. Upserts **`CONTACTS_MASTER`** rows (append new or update existing).
 
 ### Tunables (env)
 
@@ -263,8 +248,9 @@ deviate. See [`.env.example`](../.env.example) for the canonical list.
 | Var | Default | Purpose |
 |-----|---------|---------|
 | `JOBHUNT_STAGE3_ENRICH_ONLY` | `1` | Skip per-contact Claude calls; reuse Stage 2 body. Setting `0` errors out — per-contact personalization isn't wired in this build. |
-| `JOBHUNT_STAGE3_PER_KIND_DEFAULT_MAX` | `40` | Pagination cap per kind (recruiter / HM) for non-priority companies. |
-| `JOBHUNT_STAGE3_PER_KIND_PRIORITY_MAX` | `80` | Pagination cap per kind for companies in `config/priority-companies.yml`. |
+| `JOBHUNT_STAGE3_PER_KIND_DEFAULT_MAX` | `40` | Pagination cap per kind when `PER_COMPANY_TOTAL_MAX=0` (non-priority companies). |
+| `JOBHUNT_STAGE3_PER_KIND_PRIORITY_MAX` | `80` | Pagination cap per kind when `PER_COMPANY_TOTAL_MAX=0` (priority companies). |
+| `JOBHUNT_STAGE3_PER_COMPANY_TOTAL_MAX` | `50` | Combined cap per company in `CONTACTS_MASTER`; bidirectional recruiter/HM fill with partial OK. Set `0` to revert to per-kind caps (40/80). |
 | `JOBHUNT_STAGE3_PER_KIND_MIN` | `2` | Soft floor; warns when Apollo returns fewer than this for a kind. |
 | `JOBHUNT_APOLLO_PERSON_LOCATIONS` | `United States,USA,United States of America,US` | `person_locations[]` filter on api_search. |
 | `JOBHUNT_APOLLO_CONTACT_EMAIL_STATUS` | `verified,likely to engage` | `contact_email_status[]` filter on api_search. |
@@ -273,7 +259,7 @@ deviate. See [`.env.example`](../.env.example) for the canonical list.
 | `JOBHUNT_STAGE3_DUMP_DIR` | `data/stage3` | Per-run JSON dump directory (relative to `career-ops/`). |
 | `JOBHUNT_SNAPSHOTS_DIR` | `data/snapshots` | `CONTACTS_MASTER` JSON snapshots: per-run history + rolling `contacts-master-latest.json` (relative to `career-ops/`). |
 | `JOBHUNT_STAGE3_LIMIT` | unset | Cap PURSUE rows per run (e.g. `1` for a dry-run). Failures count toward the cap. |
-| `JOBHUNT_REGENERATE_CONTACTS` | unset | `1` = re-run even for jobs that already have `CONTACTS` rows. |
+| `JOBHUNT_REGENERATE_CONTACTS` | unset | Legacy (no longer used). |
 
 **Deprecated** (still parsed for backward compatibility, but ignored when
 `config/priority-companies.yml` exists):
@@ -281,6 +267,17 @@ deviate. See [`.env.example`](../.env.example) for the canonical list.
 `JOBHUNT_STAGE3_PER_KIND_DEFAULT_MAX`),
 `JOBHUNT_STAGE3_BIGCO_EMPLOYEE_THRESHOLD` (replaced by the priority-yaml
 heuristic so Stage 3 never has to call `/organizations/enrich`).
+
+### Pre-run backup (no Apollo credits)
+
+Before a large Stage 3 run, snapshot the live sheet:
+
+```bash
+npm run jobhunt:dump-contacts-master
+```
+
+Writes `data/snapshots/contacts-master-<runId>.json`, updates
+`contacts-master-latest.json`, and a slim `contacts-emails-<runId>.json`.
 
 ### Recommended dry-run on a fresh setup
 
@@ -290,19 +287,11 @@ JOBHUNT_STAGE3_LIMIT=1 npm run jobhunt:stage3
 
 Inspect:
 
-- **Sheet:** `CONTACTS` rows have `contact_id`, `email_drive_link`, and
-  `linkedin_invite_text` populated; `CONTACTS_MASTER` rows show
-  `apollo_person_id=...; kind=RECRUITER` (or `HIRING_MANAGER`) in `notes`.
-- **Drive:** `EMAIL/<company>/<job>/email-<job_id>-<contact_id>.txt` files
-  exist, salutations read `Hi <FirstName>,`, and the closing block contains
-  full name, phone, LinkedIn URL, and email pulled from `profile.yml`.
-- **Disk:** `career-ops/data/stage3/<runId>/` contains per-run JSON (see
-  "Local dumps" below). `CONTACTS_MASTER` snapshots live under
-  `career-ops/data/snapshots/` (see below).
-
-Re-running on the same job should be a no-op (`skipped_already_has_contacts++`).
-Re-running with `JOBHUNT_REGENERATE_CONTACTS=1` regenerates drafts and updates
-`CONTACTS_MASTER.last_contacted_*` instead of appending duplicates.
+- **Sheet:** `CONTACTS_MASTER` rows are appended/updated and contain outreach
+  draft fields when drafts are enabled.
+- **Drive:** `OUTREACH/<COMPANY>/<ROLE_TYPE>/<person_email>/...` draft files
+  exist when drafts are enabled.
+- **Disk:** `CONTACTS_MASTER` snapshots live under `career-ops/data/snapshots/`.
 
 ### Local dumps (`career-ops/data/stage3/<runId>/`)
 
@@ -317,9 +306,9 @@ Re-running with `JOBHUNT_REGENERATE_CONTACTS=1` regenerates drafts and updates
 - **`<job_id>-bulkmatch.json`** — only the people we attempted to enrich, with
   `email`, `email_status`, `email_confidence`, `matched`, and (for fallbacks)
   `source: 'people/match-fallback'`.
-- **`<job_id>-contacts-rows.json`** — exactly what was appended to the
-  `CONTACTS` sheet, so the sheet can be rebuilt from disk if cleanup wipes
-  data rows.
+- **`<job_id>-contacts-rows.json`** — legacy artifact from the old `CONTACTS`
+  sheet flow (CONTACTS tab removed). Kept only for backward-compatibility when
+  reading old run folders.
 
 The whole tree is gitignored (`career-ops/.gitignore` adds `data/stage3/`).
 `cleanup-test-data.mjs` does **not** touch `data/`, so dumps survive a sheet
@@ -396,9 +385,53 @@ The script prints a single JSON `report` to stdout (also written to
   below floor, Drive write failed, …)
 - `errors` — per-job hard failures (the run continues to the next job)
 
-`cleanup-test-data.mjs` already clears both `CONTACTS` and `CONTACTS_MASTER`,
-so the canonical end-to-end test still resets cleanly. The dumps under
-`data/stage3/` are kept on purpose so the discovered contacts aren't lost.
+`cleanup-test-data.mjs` clears `CONTACTS_MASTER` and other tabs; `data/stage3/`
+dumps are kept on purpose so discovered contacts aren't lost.
+
+## Stage 4 — LinkedIn profile import (manual list)
+
+Stage 4 imports **manually curated** LinkedIn profile URLs from
+`jobhunt/stage4/linkedin-profiles.txt` into `CONTACTS_MASTER`. It is a
+**parallel workflow** to Stage 3 — Stage 3 is unchanged.
+
+Two commands (run enrich, review dumps, then sync):
+
+```bash
+cp jobhunt/stage4/linkedin-profiles.example.txt jobhunt/stage4/linkedin-profiles.txt
+# edit linkedin-profiles.txt — one LinkedIn URL per line
+
+npm run jobhunt:stage4-enrich
+# review data/stage4/<runId>/contacts-import.json and run-summary.json
+
+npm run jobhunt:stage4-sync
+# or: npm run jobhunt:stage4-sync -- <runId>
+```
+
+### What it does
+
+1. **Enrich** — read live `CONTACTS_MASTER` for dedup; skip URLs already on the
+   sheet (no Apollo credits). Call Apollo `bulk_match` (+ `people/match`
+   fallback) for net-new URLs only. Write `data/stage4/<runId>/`:
+   - `run-summary.json` — stats
+   - `contacts-import.json` — incremental batch (`values[]` = header + net-new rows)
+2. **Sync** — append net-new rows to `CONTACTS_MASTER` (never update existing).
+   One sheet read; build full snapshot in memory (`existing + appended`). Write
+   `data/snapshots/contacts-master-latest.json` and history copy.
+
+### Prerequisites
+
+- `APOLLO_API_KEY`, `GOOGLE_SHEET_ID` in `.env`
+- Optional: `JOBHUNT_APOLLO_REVEAL_PERSONAL_EMAILS`, `JOBHUNT_STAGE4_MAX_URLS` (default 100)
+
+### Tunables (env)
+
+| Var | Default | Purpose |
+|-----|---------|---------|
+| `JOBHUNT_STAGE4_DUMP_DIR` | `data/stage4` | Per-run enrich dumps |
+| `JOBHUNT_STAGE4_MAX_URLS` | `100` | Max URLs per enrich run |
+| `JOBHUNT_SNAPSHOTS_DIR` | `data/snapshots` | Full-sheet snapshots (sync only) |
+
+Enrich does **not** write to the sheet or `contacts-master-latest.json`.
 
 ## Google Sheets/Drive throughput
 
@@ -412,7 +445,7 @@ Every Sheets/Drive call in this project routes through
    and `403` responses with rate/quota wording in `errors[].reason` or the
    message body).
 3. **Process counters** exposed via `getGoogleApiMetrics()`. Every stage
-   report (`stage2`, `stage3`, `bootstrap`, `cleanup`,
+   report (`stage2`, `stage3`, `stage4`, `bootstrap`, `cleanup`,
    `ai-test/sync-report-to-command-center`) attaches:
 
    ```json
@@ -445,8 +478,8 @@ question. Lower QPS if you see retries climbing or `last_status: 429`.
 
 ### Stage 3 batching
 
-Stage 3 batches Sheets writes per-job using `appendRows('CONTACTS', ...)`,
-`appendRows('CONTACTS_MASTER', ...)`, and `updateRanges([...], 'RAW')` so
+Stage 3 batches Sheets writes per-job using `appendRows('CONTACTS_MASTER', ...)`
+and `updateRanges([...], 'RAW')` so
 each job costs at most 3 Sheets writes (instead of ~2 per contact). At
 ~80 contacts × 40 PURSUE jobs that's ~6,400 → ~120 sheets writes per run.
 

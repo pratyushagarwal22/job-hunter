@@ -1,0 +1,9 @@
+# Copy this file to linkedin-profiles.txt in the same folder, then add LinkedIn profile URLs.
+# Lines starting with # are ignored. One URL per line.
+#
+#   cp jobhunt/stage4/linkedin-profiles.example.txt jobhunt/stage4/linkedin-profiles.txt
+#
+# Optional trailing comment is stored in CONTACTS_MASTER notes:
+#   https://www.linkedin.com/in/jane-doe/  # RECRUITER at Stripe
+
+https://www.linkedin.com/in/example-profile/

@@ -243,7 +243,8 @@ function buildProjects(canonical, selection, bulletsMap, tagOverrides) {
 ${itemsTex(bullets, '        ')}
       \\resumeItemListEnd`;
     })
-    .join('\n\n');
+    // Avoid blank lines between projects; blank line = paragraph break in LaTeX.
+    .join('\n');
 }
 
 function buildResearch(canonical, selection, bulletsMap) {
@@ -339,13 +340,18 @@ function buildTemplateSectionsFromResumeBody(canonical, parsed) {
     parsed.__education_fallback_reason = 'education_legacy_or_missing';
   }
 
-  const skillsTrim = skillsRaw.trim();
+  let skillsTrim = skillsRaw.trim();
   if (!/\\item\s*\{/.test(skillsTrim)) {
-    throw new Error('skills must be one \\item{ ... } block (see cv-complete Technical Skills)');
+    // Safe fallback: wrap only if the body looks like a real skills block.
+    // (If the model returned garbage/plain prose, fail loudly.)
+    const looksLikeSkillsBody = /\\textbf\{[^}]+\}\s*\{\s*:\s*[^}]+\}/.test(skillsTrim);
+    if (!looksLikeSkillsBody) {
+      throw new Error('skills must be one \\item{ ... } block (see cv-complete Technical Skills)');
+    }
+    skillsTrim = `\\item{\n${skillsTrim}\n}`;
+    parsed.__skills_auto_wrapped = true;
   }
-  const skills = sanitizeClaudeBulletText(
-    skillsTrim.replace(/(?<!\\)\s*&\s*/g, ' and ')
-  );
+  const skills = sanitizeClaudeBulletText(skillsTrim.replace(/(?<!\\)\s*&\s*/g, ' and '));
 
   const allowedExp = canonical.experience.map((e) => e.id);
   const allowedProj = canonical.projects.map((p) => p.id);
@@ -452,7 +458,15 @@ function renderTemplate(tpl, map) {
  * Resume LaTeX body only (Education, Skills, Experience, Projects; Research and Extracurricular optional). No summary in the PDF.
  *
  * @param {import('@anthropic-ai/sdk').Anthropic} client
- * @returns {Promise<{ tex: string, model: string, resumeJson: string, resume_warnings: string[] }>}
+ * @returns {Promise<
+ *   | { ok: true, tex: string, model: string, resumeJson: string, resume_warnings: string[] }
+ *   | {
+ *       ok: false;
+ *       model: string;
+ *       error: string;
+ *       debug: { rawClaudeText: string; parsedJson?: string; stage?: string };
+ *     }
+ * >}
  */
 export async function generateResumeTex(client, { company, role, jdText, context }) {
   const model = resolveAnthropicModel('resume');
@@ -473,11 +487,21 @@ Optional (omit when they do not strengthen this application):
 - education_coursework — plain object mapping school id (from education_include) to either an array of course title strings (preferred) or one comma-separated string. Only include ids where you want a Relevant Coursework line; omit the key entirely otherwise. Each value must be non-empty. The pipeline renders each as \\resumeEducationCoursework{Relevant Coursework}{body} immediately under that school's subheading (you never emit LaTeX for education).
 - education_certifications — same shape as education_coursework; rendered as \\resumeEducationCertifications{Certifications}{body} under that school only.
 - research_include + research_bullets — use research_include: [] and {} bullets to omit Research entirely.
-- extracurricular_include + extracurricular_bullets — use [] / omit bullets to omit Extracurricular entirely.
+- extracurricular_include + extracurricular_bullets — to omit Extracurricular entirely, set extracurricular_include: [] and extracurricular_bullets: {}. If you include any extracurricular id, bullets are mandatory (see below).
 
 Keys:
-- education_include: non-empty array of school ids — subset of ${JSON.stringify(allowedEdu)}. Display order is fixed to the canonical resume order; the pipeline reorders your array to match. Include every school you want on the resume (typically all listed ids unless space is critical).
+- education_include: non-empty array of school ids — subset of ${JSON.stringify(allowedEdu)}. Display order is fixed to the canonical resume order; the pipeline reorders your array to match. Include every school you want on the resume. For this candidate, include BOTH schools unless space is extremely critical.
 - skills: one complete LaTeX \\item{ ... } block as in cv-complete.tex (the template's Technical Skills section has a single list entry). Inside: multiple \\\\textbf{Category}{: skills} lines separated by \\\\.
+  Structure-only examples (do NOT copy content; customize categories/skills to THIS JD):
+  - Valid (structure only):
+    \\item{
+      \\textbf{CategoryA}{: Skill1, Skill2} \\\\
+      \\textbf{CategoryB}{: Skill3, Skill4}
+    }
+  - Invalid examples:
+    - Plain text like: \"Languages: Python, SQL\" (missing \\item{...})
+    - Multiple items like: \"\\item{...}\\n\\item{...}\" (must be exactly one)
+    - Any list wrappers like \\resumeSubHeadingListStart/End (template already wraps)
 - experience_include: array of ids — subset of ${JSON.stringify(allowedExp)} (at least one). Display order is fixed by the canonical resume (reverse-chronological); the pipeline reorders your array to match. Choose which roles to include, not their order.
 - experience_bullets: object; for each id in experience_include, an array of non-empty strings (bullet bodies only, no \\item, no LaTeX section commands).
 - projects_include: subset of ${JSON.stringify(allowedProj)} (at least one), order preserved from this list when possible.
@@ -485,8 +509,13 @@ Keys:
 - project_tags: optional object; for any included project id, you may override ONLY the comma-separated tag line (third argument of \\resumeProjectHeadingLinks). If you omit an id, the default tags from the canonical resume are used. Never change project titles or URLs.
 - research_include: array of ids from ${JSON.stringify(allowedRes)}; may be [] to omit the Research section entirely if it does not strengthen the resume for this role.
 - research_bullets: object mapping each id in research_include to a non-empty string array (bullet bodies only). Omit or use {} when research_include is []. Never paraphrase paper titles; titles are fixed in the template data.
-- extracurricular_include: array of ids subset of ${JSON.stringify(allowedExtra)} (may be empty to omit the whole Extracurricular section). Display order is fixed by the canonical resume; the pipeline reorders to match.
-- extracurricular_bullets: object with arrays for each id in extracurricular_include.
+- extracurricular_include: array of ids subset of ${JSON.stringify(allowedExtra)}. To omit Extracurricular, set exactly: extracurricular_include: [] and extracurricular_bullets: {}.
+- extracurricular_bullets: object mapping each id in extracurricular_include to a non-empty string array (bullet bodies only).
+  Critical invariant:
+  - If extracurricular_include is non-empty, you MUST include extracurricular_bullets.
+  - extracurricular_bullets MUST contain EVERY id listed in extracurricular_include (no missing keys).
+  - Each value must be a non-empty array of non-empty strings.
+  - If you cannot write bullets for an id, do NOT include that id.
 
 Hard rules:
 - Do not use the "&" character anywhere in any string value; use "and" instead.
@@ -495,12 +524,17 @@ Hard rules:
 - Facts must match cv.md, profile.yml, and article-digest.md; do not invent employers or degrees.
 - Bullet strings are plain prose unless a macro is required; avoid raw % and $ where possible (post-processing will fix common cases).
 - Education: school names, degrees, dates, and locations come from the canonical resume data — you only choose which school ids to include and optionally tailor coursework/certification text per id. Coursework and certifications MUST be tied to exactly one school id each — never put a course or certification from one school under another id. Only reuse items that appear under that school's block in cv.md Education; do not invent courses or certs.
+- Certifications note (important): Certifications can materially strengthen ATS keyword coverage and credibility across software engineering, data/analytics, product, security, cloud/platform, and other technical roles. When you include education_coursework for a school OR when the JD emphasizes tools/platforms that match certifications present in cv.md, strongly prefer adding education_certifications for that same school (2–4 items). Keep it selective; do not dump the entire certifications list.
 
 Length discipline (aim for ~1-2 pages when compiled with this template; avoid 3+ pages):
 - Prefer at most 4 bullets per experience role (3 is typical); only exceed when one role is clearly the spine of the story for this JD.
 - Prefer at most 3 bullets per project (2 for secondary projects).
 - Keep education compact: prefer 5–8 most JD-relevant courses per school when you include coursework; prefer 2–4 certifications per school when you include certifications. Omit education_coursework or education_certifications keys (or omit a school id inside them) when they do not strengthen this application.
-- Omit extracurricular when it does not strengthen this application.`;
+- Omit extracurricular when it does not strengthen this application.
+
+Before you respond (silently verify; do NOT include this checklist in your output):
+- If extracurricular_include is [], then extracurricular_bullets must be {}.
+- If extracurricular_include is non-empty, ensure EVERY id in extracurricular_include exists as a key in extracurricular_bullets and has at least one bullet string.`;
 
   const userBody = `Target role: ${role} at ${company}
 
@@ -523,45 +557,86 @@ Canonical ids:
 - research: ${allowedRes.join(', ')}
 - extracurricular: ${allowedExtra.join(', ')}`;
 
-  const msgBody = await client.messages.create({
-    model,
-    max_tokens: 8000,
-    system: systemBody,
-    messages: [{ role: 'user', content: userBody }],
-  });
+  let msgBody;
+  try {
+    msgBody = await client.messages.create({
+      model,
+      max_tokens: 8000,
+      system: systemBody,
+      messages: [{ role: 'user', content: userBody }],
+    });
+  } catch (err) {
+    return {
+      ok: false,
+      model,
+      error: err?.message || String(err),
+      debug: {
+        stage: 'anthropic_api',
+        rawClaudeText: `(no model response)\n${err?.message || String(err)}`,
+      },
+    };
+  }
 
   const rawBody = textBlocks(msgBody);
-  const parsed = extractJsonObject(rawBody);
-  if (!parsed) throw new Error(`Resume JSON parse failed. Snippet: ${rawBody.slice(0, 600)}`);
-  if (parsed.summary != null) delete parsed.summary;
+  let parsedSnapshot = null;
 
-  const sections = buildTemplateSectionsFromResumeBody(canonical, parsed);
-  const resumeJson = JSON.stringify(parsed);
+  try {
+    const parsed = extractJsonObject(rawBody);
+    if (!parsed) {
+      return {
+        ok: false,
+        model,
+        error: `Resume JSON parse failed. Snippet: ${rawBody.slice(0, 600)}`,
+        debug: { stage: 'json_parse', rawClaudeText: rawBody },
+      };
+    }
+    if (parsed.summary != null) delete parsed.summary;
+    parsedSnapshot = parsed;
 
-  const resume_warnings = [];
-  if (parsed.__education_fallback_reason) {
-    resume_warnings.push(`education_fallback: ${parsed.__education_fallback_reason}`);
+    const sections = buildTemplateSectionsFromResumeBody(canonical, parsed);
+    const resumeJson = JSON.stringify(parsed);
+
+    const resume_warnings = [];
+    if (parsed.__education_fallback_reason) {
+      resume_warnings.push(`education_fallback: ${parsed.__education_fallback_reason}`);
+    }
+    if (parsed.__education_order_normalized) {
+      resume_warnings.push('education_include reordered to canonical resume order');
+    }
+    if (parsed.__experience_order_normalized) {
+      resume_warnings.push('experience_include reordered to canonical reverse-chronological order');
+    }
+    if (parsed.__extracurricular_order_normalized) {
+      resume_warnings.push('extracurricular_include reordered to canonical order');
+    }
+    if (parsed.__skills_auto_wrapped) {
+      resume_warnings.push('skills auto-wrapped into single \\item{...} block');
+    }
+
+    const tplPath = join(process.cwd(), 'templates', 'cv-template.tex');
+    const tpl = readFileSync(tplPath, 'utf-8');
+
+    const tex = renderTemplate(tpl, sections);
+
+    return { ok: true, tex, model, resumeJson, resume_warnings };
+  } catch (err) {
+    return {
+      ok: false,
+      model,
+      error: err?.message || String(err),
+      debug: {
+        stage: 'template_assembly',
+        rawClaudeText: rawBody,
+        ...(parsedSnapshot != null && {
+          parsedJson: JSON.stringify(parsedSnapshot, null, 2),
+        }),
+      },
+    };
   }
-  if (parsed.__education_order_normalized) {
-    resume_warnings.push('education_include reordered to canonical resume order');
-  }
-  if (parsed.__experience_order_normalized) {
-    resume_warnings.push('experience_include reordered to canonical reverse-chronological order');
-  }
-  if (parsed.__extracurricular_order_normalized) {
-    resume_warnings.push('extracurricular_include reordered to canonical order');
-  }
-
-  const tplPath = join(process.cwd(), 'templates', 'cv-template.tex');
-  const tpl = readFileSync(tplPath, 'utf-8');
-
-  const tex = renderTemplate(tpl, sections);
-
-  return { tex, model, resumeJson, resume_warnings };
 }
 
 export async function generateCoverLetter(client, { company, role, jdText, context }) {
-  const model = resolveAnthropicModel('resume');
+  const model = resolveAnthropicModel('cover_letter');
   const system = `You write concise, professional cover letters as plain text (not markdown).
 Structure exactly:
 1) Salutation line: "Dear Hiring Manager," (or "Dear [Team] Hiring Team," if company name fits naturally)

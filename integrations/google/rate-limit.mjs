@@ -3,7 +3,7 @@
  *
  * Google Sheets caps reads and writes at 60/min/user/project (300/min/project).
  * Google Drive caps usage at 1M quota units/min/project. With ~3,200+ writes
- * per Stage 3 run at portals.yml scale, a naïve loop trips 403/429 within
+ * per Stage 3 run at config/portals.yml scale, a naïve loop trips 403/429 within
  * seconds. This module funnels every Sheets/Drive call through:
  *
  *   1) A token-bucket per lane (sheetsRead / sheetsWrite / drive) that paces

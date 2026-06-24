@@ -3,7 +3,7 @@ import { requireEnv } from './env.mjs';
 import { withGoogleApi } from './rate-limit.mjs';
 import { createReadStream } from 'fs';
 
-export const REQUIRED_SUBFOLDERS = ['RESUME', 'COVERLETTER', 'EMAIL', 'JDS', 'CONTEXT'];
+export const REQUIRED_SUBFOLDERS = ['RESUME', 'COVERLETTER', 'EMAIL', 'JDS', 'CONTEXT', 'OUTREACH'];
 
 /**
  * Process-scoped folder cache. Stage 3 calls `ensureFolderPath(EMAIL_BUCKET,

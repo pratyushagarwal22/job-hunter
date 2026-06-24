@@ -82,7 +82,7 @@ const ROLE_STOPWORDS = new Set([
   'fulltime', 'parttime', 'permanent', 'temporary', 'intern', 'internship',
   // generic job words
   'role', 'position', 'opportunity', 'team', 'based',
-  // very common locations (extend in portals.yml later if needed)
+  // very common locations (extend in config/portals.yml later if needed)
   'bangalore', 'bengaluru', 'mumbai', 'delhi', 'hyderabad', 'pune', 'chennai',
   'london', 'berlin', 'paris', 'madrid', 'barcelona', 'amsterdam', 'dublin',
   'york', 'francisco', 'seattle', 'boston', 'austin', 'chicago', 'toronto',

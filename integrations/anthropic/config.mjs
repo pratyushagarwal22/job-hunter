@@ -8,18 +8,24 @@ import { requireEnv } from '../google/env.mjs';
  *
  * Env vars:
  *   ANTHROPIC_MODEL_SCORE, ANTHROPIC_MODEL_LINKEDIN,
- *   ANTHROPIC_MODEL_RESUME, ANTHROPIC_MODEL_RESUME_SUMMARY, ANTHROPIC_MODEL_OUTREACH
+ *   ANTHROPIC_MODEL_RESUME, ANTHROPIC_MODEL_RESUME_SUMMARY,
+ *   ANTHROPIC_MODEL_OUTREACH, ANTHROPIC_MODEL_COVER_LETTER
  *
  * Tasks:
- *   - resume — full tailored resume (LaTeX JSON for PDF: education, skills, experience, projects, optional research/extracurricular). Same model as cover letter. Override: ANTHROPIC_MODEL_RESUME, then ANTHROPIC_MODEL, default Sonnet.
- *   - resume_summary — plain-text summary for ASSETS column only (from Claude resume JSON + JD). Override: ANTHROPIC_MODEL_RESUME_SUMMARY, then ANTHROPIC_MODEL (not ANTHROPIC_MODEL_RESUME), default Haiku.
+ *   - score — JD-to-profile match scoring (0–10). Override: ANTHROPIC_MODEL_SCORE, default Sonnet.
+ *   - linkedin — LinkedIn connection note template. Override: ANTHROPIC_MODEL_LINKEDIN, default Haiku.
+ *   - resume — full tailored resume (LaTeX JSON for PDF). Override: ANTHROPIC_MODEL_RESUME, default Opus.
+ *   - resume_summary — plain-text summary for ASSETS column only. Override: ANTHROPIC_MODEL_RESUME_SUMMARY, default Sonnet.
+ *   - outreach — outreach email template (JSON subject+body). Override: ANTHROPIC_MODEL_OUTREACH, default Opus.
+ *   - cover_letter — team-directed cover letter (plain text). Override: ANTHROPIC_MODEL_COVER_LETTER, default Sonnet.
  */
 const DEFAULT_BY_TASK = {
-  score: 'claude-haiku-4-5',
+  score: 'claude-sonnet-4-6',
   linkedin: 'claude-haiku-4-5',
-  resume: 'claude-sonnet-4-20250514',
-  resume_summary: 'claude-haiku-4-5',
-  outreach: 'claude-sonnet-4-20250514',
+  resume: 'claude-opus-4-8',
+  resume_summary: 'claude-sonnet-4-6',
+  outreach: 'claude-opus-4-8',
+  cover_letter: 'claude-sonnet-4-6',
 };
 
 const ENV_KEY_BY_TASK = {
@@ -28,10 +34,11 @@ const ENV_KEY_BY_TASK = {
   resume: 'ANTHROPIC_MODEL_RESUME',
   resume_summary: 'ANTHROPIC_MODEL_RESUME_SUMMARY',
   outreach: 'ANTHROPIC_MODEL_OUTREACH',
+  cover_letter: 'ANTHROPIC_MODEL_COVER_LETTER',
 };
 
 /**
- * @param {'score' | 'linkedin' | 'resume' | 'resume_summary' | 'outreach'} task
+ * @param {'score' | 'linkedin' | 'resume' | 'resume_summary' | 'outreach' | 'cover_letter'} task
  */
 export function resolveAnthropicModel(task) {
   const key = ENV_KEY_BY_TASK[task];

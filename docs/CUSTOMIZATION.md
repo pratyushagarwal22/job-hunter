@@ -24,7 +24,7 @@ The archetype table in `_profile.md` determines how offers are scored and CVs ar
 
 Also update the "Adaptive Framing" table to map YOUR specific projects to each archetype.
 
-## Portals (portals.yml)
+## Portals (config/portals.yml)
 
 Copy from `templates/portals.example.yml` and customize:
 

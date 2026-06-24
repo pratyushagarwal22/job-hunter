@@ -18,7 +18,7 @@ Agent(
 
 ## Configuración
 
-Leer `portals.yml` que contiene:
+Leer `config/portals.yml` que contiene:
 - `search_queries`: Lista de queries WebSearch con `site:` filters por portal (descubrimiento amplio)
 - `tracked_companies`: Empresas específicas con `careers_url` para navegación directa
 - `title_filter`: Keywords positive/negative/seniority_boost para filtrado de títulos
@@ -33,7 +33,7 @@ Leer `portals.yml` que contiene:
 - Detecta ofertas nuevas al instante
 - No depende de la indexación de Google
 
-**Cada empresa DEBE tener `careers_url` en portals.yml.** Si no la tiene, buscarla una vez, guardarla, y usar en futuros scans.
+**Cada empresa DEBE tener `careers_url` en config/portals.yml.** Si no la tiene, buscarla una vez, guardarla, y usar en futuros scans.
 
 ### Nivel 2 — ATS APIs / Feeds (COMPLEMENTARIO)
 
@@ -68,7 +68,7 @@ Los niveles son aditivos — se ejecutan todos, los resultados se mezclan y dedu
 
 ## Workflow
 
-1. **Leer configuración**: `portals.yml`
+1. **Leer configuración**: `config/portals.yml`
 2. **Leer historial**: `data/scan-history.tsv` → URLs ya vistas
 3. **Leer dedup sources**: `data/applications.md` + `data/pipeline.md`
 
@@ -104,7 +104,7 @@ Los niveles son aditivos — se ejecutan todos, los resultados se mezclan y dedu
       - **company**: después del " @ " en el título, o extraer del dominio/path
    c. Acumular en lista de candidatos (dedup con Nivel 1+2)
 
-6. **Filtrar por título** usando `title_filter` de `portals.yml`:
+6. **Filtrar por título** usando `title_filter` de `config/portals.yml`:
    - Al menos 1 keyword de `positive` debe aparecer en el título (case-insensitive)
    - 0 keywords de `negative` deben aparecer
    - `seniority_boost` keywords dan prioridad pero no son obligatorios
@@ -223,14 +223,14 @@ Fallback: si solo tienes la URL ATS directa, navega primero al sitio web de la e
 1. Intentar el patrón de su plataforma conocida
 2. Si falla, hacer un WebSearch rápido: `"{company}" careers jobs`
 3. Navegar con Playwright para confirmar que funciona
-4. **Guardar la URL encontrada en portals.yml** para futuros scans
+4. **Guardar la URL encontrada en config/portals.yml** para futuros scans
 
 **Si `careers_url` devuelve 404 o redirect:**
 1. Anotar en el resumen de salida
 2. Intentar scan_query como fallback
 3. Marcar para actualización manual
 
-## Mantenimiento del portals.yml
+## Mantenimiento del config/portals.yml
 
 - **SIEMPRE guardar `careers_url`** cuando se añade una empresa nueva
 - Añadir nuevos queries según se descubran portales o roles interesantes

@@ -5,6 +5,7 @@ data/pipeline.md
 data/scan-history.tsv
 # Stage 3 Apollo dumps — local-only, never commit (rebuildable from sheet rerun)
 data/stage3/
+data/stage4/
 data/snapshots/*
 !data/snapshots/.gitkeep
 reports/*.md
@@ -22,7 +23,7 @@ jds/*
 
 # User config and customization (never auto-updated)
 config/profile.yml
-portals.yml
+config/portals.yml
 modes/_profile.md
 .update-dismissed
 .update-lock
@@ -50,3 +51,4 @@ package-lock.json
 # Local AI URL batch (never commit real job links)
 jobhunt/ai-test/urls.txt
 jobhunt/ai-test/output/
+jobhunt/stage4/linkedin-profiles.txt

@@ -12,6 +12,10 @@
  *
  * Regenerate existing ASSETS rows:
  *   JOBHUNT_REGENERATE_ASSETS=1 npm run jobhunt:stage2
+ *
+ * When resume JSON/LaTeX assembly fails, uploads resume-error-<job_id>.txt to Drive, sets
+ * resume_status RESUME_GENERATION_FAILED and resume_drive_link to that file; cover letter,
+ * email, LinkedIn, CONTEXT, and ASSETS row are still written.
  */
 
 import { loadDotenv } from '../integrations/google/env.mjs';
@@ -109,12 +113,48 @@ function latexErrorContext(texPath, compileReport) {
   }
 }
 
+const RESUME_DEBUG_TEXT_CAP = 200_000;
+
+function capResumeDebugSection(label, text) {
+  const s = text == null ? '' : String(text);
+  if (s.length <= RESUME_DEBUG_TEXT_CAP) return s;
+  return `${s.slice(0, RESUME_DEBUG_TEXT_CAP)}\n\n[${label} truncated at ${RESUME_DEBUG_TEXT_CAP} chars]\n`;
+}
+
+function buildResumeErrorFileContents({
+  job_id,
+  company,
+  role,
+  generatedAt,
+  resumeOut,
+}) {
+  const dbg = resumeOut.debug || {};
+  let out = `job_id: ${job_id}
+company: ${company}
+role: ${role}
+generated_at: ${generatedAt}
+error: ${resumeOut.error}
+stage: ${dbg.stage || '(unknown)'}
+
+--- Claude raw response ---
+${capResumeDebugSection('Claude raw response', dbg.rawClaudeText)}
+`;
+  if (dbg.parsedJson) {
+    out += `
+--- Parsed JSON (if any before failure) ---
+${capResumeDebugSection('Parsed JSON', dbg.parsedJson)}
+`;
+  }
+  return out;
+}
+
 const report = {
   ok: false,
   processed: 0,
   skipped: 0,
   alreadyHadAssets: 0,
   assetsCreated: [],
+  warnings: [],
   errors: [],
 };
 
@@ -205,11 +245,47 @@ try {
       const resumeOut = await generateResumeTex(client, { company, role, jdText, context });
       await sleep(1500);
 
-      const resumeSummaryOut = await generateResumeSummaryForSheet(client, {
-        jdText,
-        resumeJson: resumeOut.resumeJson,
-      });
-      await sleep(1200);
+      let resumeSummaryOut;
+      let resumeTexLink = null;
+      let resumePdfLink = null;
+      let resumeErrorLink = null;
+      let resumeLink;
+      let resumeStatus;
+      let latexErrorCtx = null;
+      let compiled = null;
+
+      if (!resumeOut.ok) {
+        const errBlob = buildResumeErrorFileContents({
+          job_id,
+          company,
+          role,
+          generatedAt: now.toISOString(),
+          resumeOut,
+        });
+        resumeErrorLink = await writeInBucket('RESUME', `resume-error-${job_id}.txt`, errBlob);
+        resumeLink = resumeErrorLink;
+        resumeStatus = 'RESUME_GENERATION_FAILED';
+        report.warnings.push({
+          job_id,
+          company,
+          role,
+          kind: 'resume_generation_failed',
+          error: resumeOut.error,
+          resume_error_drive_link: resumeErrorLink,
+          debug: { stage: resumeOut.debug?.stage },
+        });
+        resumeSummaryOut = {
+          model: '—',
+          text: 'Resume generation failed; open the resume-error file linked in resume_drive_link on Drive.',
+        };
+        await sleep(1200);
+      } else {
+        resumeSummaryOut = await generateResumeSummaryForSheet(client, {
+          jdText,
+          resumeJson: resumeOut.resumeJson,
+        });
+        await sleep(1200);
+      }
 
       const coverOut = await generateCoverLetter(client, { company, role, jdText, context });
       await sleep(1500);
@@ -220,28 +296,38 @@ try {
       const liOut = await generateLinkedInInvite(client, { company, role, jdText, context });
       await sleep(800);
 
-      const compiled = tryCompileLatexToPdf(resumeOut.tex);
-      if (!compiled.ok) {
-        const resumeTexLink = await writeInBucket('RESUME', `resume-${job_id}.tex`, resumeOut.tex);
-        const texPath = join(compiled.dir, 'resume.tex');
-        const ctx = latexErrorContext(texPath, compiled.compileReport);
-        const err = new Error(`LaTeX compilation failed for ${job_id}. .tex uploaded: ${resumeTexLink}`);
-        err.compileReport = compiled.compileReport;
-        err.latex_error_context = ctx;
-        throw err;
-      }
+      if (resumeOut.ok) {
+        resumeTexLink = await writeInBucket('RESUME', `resume-${job_id}.tex`, resumeOut.tex);
+        compiled = tryCompileLatexToPdf(resumeOut.tex);
+        resumeLink = resumeTexLink;
+        resumeStatus = 'ASSETS_READY';
 
-      const resumeTexLink = await writeInBucket('RESUME', `resume-${job_id}.tex`, resumeOut.tex);
-      const bucketId = bucketIdByName.get('RESUME');
-      const { folderId } = await ensureFolderPath(bucketId, [companyFolderName, jobFolderName]);
-      const up = await uploadFileFromPath({
-        parentId: folderId,
-        filename: `resume-${job_id}.pdf`,
-        mimeType: 'application/pdf',
-        filePath: compiled.pdfPath,
-      });
-      const resumePdfLink = up.webViewLink;
-      const resumeLink = resumePdfLink;
+        if (!compiled.ok) {
+          const texPath = join(compiled.dir, 'resume.tex');
+          latexErrorCtx = latexErrorContext(texPath, compiled.compileReport);
+          report.warnings.push({
+            job_id,
+            company,
+            role,
+            kind: 'resume_pdf_compile_failed',
+            resume_tex_drive_link: resumeTexLink,
+            latex_compile: compiled.compileReport || null,
+            latex_error_context: latexErrorCtx,
+          });
+          resumeStatus = 'RESUME_TEX_READY_PDF_FAILED';
+        } else {
+          const bucketId = bucketIdByName.get('RESUME');
+          const { folderId } = await ensureFolderPath(bucketId, [companyFolderName, jobFolderName]);
+          const up = await uploadFileFromPath({
+            parentId: folderId,
+            filename: `resume-${job_id}.pdf`,
+            mimeType: 'application/pdf',
+            filePath: compiled.pdfPath,
+          });
+          resumePdfLink = up.webViewLink;
+          resumeLink = resumePdfLink;
+        }
+      }
 
       const coverLink = await writeInBucket('COVERLETTER', `coverletter-${job_id}.txt`, coverOut.text);
       const emailLink = await writeInBucket(
@@ -258,7 +344,9 @@ try {
         jd_drive_link: jdLink,
         generated_at: now.toISOString(),
         jd_excerpt: jdText.slice(0, 2500),
-        resume_warnings: resumeOut.resume_warnings?.length ? resumeOut.resume_warnings : undefined,
+        ...(resumeOut.ok && resumeOut.resume_warnings?.length
+          ? { resume_warnings: resumeOut.resume_warnings }
+          : {}),
         models: {
           resume: resumeOut.model,
           cover_letter: coverOut.model,
@@ -269,14 +357,22 @@ try {
           model: resumeSummaryOut.model,
           text: resumeSummaryOut.text,
         },
-        links: {
-          resume_latex: resumeTexLink,
-          resume_pdf: resumePdfLink || null,
-          cover_letter: coverLink,
-          outreach_email: emailLink,
-        },
+        links: resumeOut.ok
+          ? {
+              resume_latex: resumeTexLink,
+              resume_pdf: resumePdfLink || null,
+              cover_letter: coverLink,
+              outreach_email: emailLink,
+            }
+          : {
+              resume_latex: null,
+              resume_pdf: null,
+              resume_error: resumeErrorLink,
+              cover_letter: coverLink,
+              outreach_email: emailLink,
+            },
         generated_assets: {
-          resume: resumeOut.tex,
+          resume: resumeOut.ok ? resumeOut.tex : null,
           cover_letter_text: coverOut.text,
           outreach_email: {
             subject: emailOut.subject,
@@ -285,8 +381,8 @@ try {
           },
           linkedin_invite_text: liOut.text,
         },
-        latex_compile: compiled.compileReport || null,
-        latex_error_context: null,
+        latex_compile: resumeOut.ok && compiled ? compiled.compileReport || null : null,
+        latex_error_context: resumeOut.ok ? latexErrorCtx : null,
       };
       const ctxLink = await writeInBucket(
         'CONTEXT',
@@ -298,7 +394,7 @@ try {
         job_id,
         company,
         role,
-        'ASSETS_READY',
+        resumeStatus,
         resumeLink,
         coverLink,
         emailLink,
@@ -308,9 +404,11 @@ try {
         liOut.text,
         String(liOut.text.length),
         now.toISOString(),
-        resumePdfLink
-          ? 'Claude-generated resume (PDF + .tex), cover letter, outreach email; review before sending'
-          : 'Claude-generated resume (PDF + .tex), cover letter, outreach email; review before sending',
+        !resumeOut.ok
+          ? 'Resume LaTeX generation failed (see resume-error on Drive). Cover letter, email, LinkedIn generated; review before sending.'
+          : resumePdfLink
+            ? 'Claude-generated resume (PDF + .tex), cover letter, outreach email; review before sending'
+            : 'Claude-generated resume (.tex; PDF compile failed), cover letter, outreach email; review before sending',
       ];
 
       const existingRow = existingJobIdToRow.get(job_id);
@@ -343,7 +441,11 @@ try {
         resumeLink,
         coverLink,
         emailLink,
-        resume_warnings: resumeOut.resume_warnings || [],
+        resume_warnings: resumeOut.ok ? resumeOut.resume_warnings || [] : [],
+        resume_status: resumeStatus,
+        resume_tex_drive_link: resumeTexLink,
+        resume_pdf_drive_link: resumePdfLink,
+        resume_error_drive_link: resumeErrorLink,
         models: {
           resume: resumeOut.model,
           resume_summary: resumeSummaryOut.model,

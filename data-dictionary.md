@@ -28,20 +28,6 @@ This file documents the Google Sheets “Command Center” tab schemas used by t
 - **priority**: Manual priority bucket (e.g., `P1`, `P2`, `P3`).
 - **notes**: Freeform review notes.
 
-## `CONTACTS`
-Job-specific contacts for this role (may include multiple rows per job_id).
-- **job_id**: Stable internal ID for this job across all tabs and Drive.
-- **company**: Company name.
-- **role**: Job title.
-- **contact_name**: Person’s name.
-- **contact_title**: Person’s title.
-- **linkedin_url**: LinkedIn profile URL.
-- **email**: Email address (if available).
-- **email_source**: Where the email came from (manual, Apollo, Lusha, etc.).
-- **email_confidence**: Confidence/verification status (freeform).
-- **status**: Contact workflow status (pending/ready/contacted/etc.).
-- **notes**: Freeform notes.
-
 ## `CONTACTS_MASTER`
 Deduped “directory” of contacts across companies (reused before enrichment calls).
 - **contact_id**: Canonical contact identifier (typically normalized email; or a generated ID if no email).

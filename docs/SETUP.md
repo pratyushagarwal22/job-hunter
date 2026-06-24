@@ -34,13 +34,15 @@ Create `cv.md` in the project root with your full CV in markdown format. This is
 ### 4. Configure portals
 
 ```bash
-cp templates/portals.example.yml portals.yml
+cp templates/portals.example.yml config/portals.yml
 ```
 
-Edit `portals.yml`:
+Edit `config/portals.yml`:
 - Update `title_filter.positive` with keywords matching your target roles
 - Add companies you want to track in `tracked_companies`
 - Customize `search_queries` for your preferred job boards
+
+Older setups used `portals.yml` at repo root; this project now uses `config/portals.yml` exclusively.
 
 ### 5. Start using
 

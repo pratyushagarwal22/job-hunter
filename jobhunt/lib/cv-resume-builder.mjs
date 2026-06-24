@@ -240,7 +240,9 @@ export function buildEducationLatex(canonicalEducation, opts) {
     }
   }
 
-  return chunks.join('\n\n');
+  // IMPORTANT: Avoid blank lines between commands; in LaTeX, a blank line is a paragraph break
+  // which introduces vertical whitespace in the rendered PDF.
+  return chunks.join('\n');
 }
 
 /**

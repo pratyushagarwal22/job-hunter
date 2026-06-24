@@ -11,7 +11,7 @@ AI-powered job search automation: pipeline tracking, offer evaluation, CV genera
 ## Data Contract (CRITICAL)
 
 **User Layer (NEVER auto-updated — your personalizations live here):**
-- `cv.md`, `config/profile.yml`, `modes/_profile.md`, `article-digest.md`, `portals.yml`
+- `cv.md`, `config/profile.yml`, `modes/_profile.md`, `article-digest.md`, `config/portals.yml`
 - `data/*`, `reports/*`, `output/*`, `interview-prep/*`
 
 **System Layer (auto-updatable — do NOT put user data here):**
@@ -64,7 +64,7 @@ When using [Gemini CLI](https://github.com/google-gemini/gemini-cli), the follow
 1. Does `cv.md` exist?
 2. Does `config/profile.yml` exist (not just profile.example.yml)?
 3. Does `modes/_profile.md` exist (not just _profile.template.md)?
-4. Does `portals.yml` exist (not just templates/portals.example.yml)?
+4. Does `config/portals.yml` exist (not just templates/portals.example.yml)?
 
 If `modes/_profile.md` is missing, copy from `modes/_profile.template.md` silently.
 
@@ -97,7 +97,7 @@ If `modes/_profile.md` is missing, copy from `modes/_profile.template.md` silent
 |------|----------|
 | `data/applications.md` | Application tracker |
 | `data/pipeline.md` | Inbox of pending URLs |
-| `portals.yml` | Query and company config |
+| `config/portals.yml` | Query and company config |
 | `templates/cv-template.html` | HTML template for CVs |
 | `generate-pdf.mjs` | Playwright: HTML to PDF |
 | `article-digest.md` | Proof points from portfolio (optional) |

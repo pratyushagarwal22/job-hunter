@@ -1,6 +1,6 @@
 # Career-Ops
 
-[English](README.md) | [Español](README.es.md) | [Português (Brasil)](README.pt-BR.md) | [한국어](README.ko-KR.md) | [日本語](README.ja.md) | [Русский](README.ru.md) | [简体中文](README.cn.md) | [繁體中文](README.zh-TW.md)
+[English](README.md)
 
 <p align="center">
   <a href="https://x.com/santifer"><img src="docs/hero-banner.jpg" alt="Career-Ops — Multi-Agent Job Search System" width="800"></a>
@@ -90,7 +90,7 @@ npm run doctor                     # Validates all prerequisites
 
 # 3. Configure
 cp config/profile.example.yml config/profile.yml  # Edit with your details
-cp templates/portals.example.yml portals.yml       # Customize companies
+cp templates/portals.example.yml config/portals.yml # Customize companies
 
 # 4. Add your CV
 # Create cv.md in the project root with your CV in markdown
@@ -101,7 +101,7 @@ claude   # Open Claude Code in this directory
 # Then ask Claude to adapt the system to you:
 # "Change the archetypes to backend engineering roles"
 # "Translate the modes to English"
-# "Add these 5 companies to portals.yml"
+# "Add these 5 companies to config/portals.yml"
 # "Update my profile with this CV I'm pasting"
 
 # 6. Start using
@@ -203,7 +203,7 @@ You paste a job URL or description
 
 ## Pre-configured Portals
 
-The scanner comes with **45+ companies** ready to scan and **19 search queries** across major job boards. Copy `templates/portals.example.yml` to `portals.yml` and add your own:
+The scanner comes with **45+ companies** ready to scan and **19 search queries** across major job boards. Copy `templates/portals.example.yml` to `config/portals.yml` and add your own:
 
 **AI Labs:** Anthropic, OpenAI, Mistral, Cohere, LangChain, Pinecone
 **Voice AI:** ElevenLabs, PolyAI, Parloa, Hume AI, Deepgram, Vapi, Bland AI

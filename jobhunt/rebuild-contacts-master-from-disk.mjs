@@ -21,7 +21,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { loadDotenv } from '../integrations/google/env.mjs';
-import { clearTabExceptHeader, appendRows } from '../integrations/google/sheets.mjs';
+import { clearTabExceptHeader, appendRows, ensureHeaderRow } from '../integrations/google/sheets.mjs';
 import { getGoogleApiMetrics } from '../integrations/google/rate-limit.mjs';
 
 await loadDotenv();
@@ -103,6 +103,10 @@ try {
   const rows = values.slice(1);
   report.snapshot_header = header;
   report.snapshot_rows = rows.length;
+
+  // Restore the snapshot schema explicitly (prevents old-format headers
+  // from persisting if someone ran rebuild without bootstrap).
+  report.sheets.headerUpdated = await ensureHeaderRow('CONTACTS_MASTER', header);
 
   report.sheets.cleared = await clearTabExceptHeader('CONTACTS_MASTER');
   await appendRows('CONTACTS_MASTER', rows);

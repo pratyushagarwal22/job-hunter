@@ -11,7 +11,7 @@
  * This module replaces those two duplicated copies (one in
  * `jobhunt/ai-test/score-from-urls.mjs`, one in
  * `jobhunt/lib/claude-asset-generators.mjs`) with a single brace-balanced,
- * string-aware scanner. Stage 1 (future portals.yml ingestion) reuses it.
+ * string-aware scanner. Stage 1 (future config/portals.yml ingestion) reuses it.
  *
  * Tolerated input shapes (parser succeeds):
  *   - bare object: `{ "x": 1 }`
