@@ -108,8 +108,11 @@ After changing **`config/profile.yml`** (e.g. SWE scoring rules), re-run **`npm 
 
 In addition to the general fit assessment, the URL scorer applies these score-floor rules (defined in **`jobhunt/lib/scoring-prompt.mjs`**, synced with **`config/profile.yml`** → `ai_evaluation`):
 
-- **SWE early-career rule**: for clearly entry-level SWE roles (0–2 years / new grad), keep `match_score >= 6` unless other factors justify lower; only score < 6 when the JD clearly requires >2 years or is mid-level+.
-- **Cloud / data-platform SWE rule**: for `role_family="SWE"` on cloud infrastructure, data platform, analytics infrastructure, distributed systems for data, or ML/data serving teams, keep `match_score >= 6` unless hard blockers apply (clearance, authorization, zero overlap).
+- **SWE early-career rule**: for clearly entry-level SWE roles (0–3 years / new grad / "new grads ok"), keep `match_score >= 6` unless hard blockers apply; only score < 6 when the JD clearly requires >3 years AND is mid-level+.
+- **Cloud / data-platform / applied-AI SWE rule**: for `role_family="SWE"` on cloud infrastructure, data platform, analytics infrastructure, distributed systems for data, ML/data serving, or applied AI/LLM teams, keep `match_score >= 6` unless hard blockers apply (clearance, authorization).
+- **FDE rule**: for Forward Deployed Engineer roles with a coding bar, keep `match_score >= 6` unless hard blockers apply.
+- **Startup / founding / product-engineering rule**: for Founding Engineer, Founding Product Engineer, or Product Engineer at startups (e.g. workatastartup.com) when "new grads ok" or no explicit >3 year bar, keep `match_score >= 6` unless hard blockers apply.
+- **Location rule**: geography is **never** a scoring penalty (US, West Coast, international, or onsite/hybrid). **Greater Seattle area** gets a **+0.25–0.5 bonus**; **US West Coast** (WA/OR/CA) up to **+0.25**; onsite at startups is expected and fine.
 - **Analyst big-tech rule**: for `role_family="ANALYST"` at a company listed in `config/priority-companies.yml`, if the JD requires **3–5 years** experience, then `match_score >= 6`.
 - **PM early-career rule**: for `role_family="PM"` roles that are clearly early-career (APM / apprentice / early career / 0–2 years), then `match_score >= 6`.
 
