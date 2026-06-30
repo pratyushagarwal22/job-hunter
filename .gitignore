@@ -8,25 +8,13 @@ data/stage3/
 data/stage4/
 data/snapshots/*
 !data/snapshots/.gitkeep
-reports/*.md
-!reports/.gitkeep
 output/*
 !output/.gitkeep
-batch/logs/*
-!batch/logs/.gitkeep
-batch/batch-state.tsv
-batch/batch-input.tsv
-batch/tracker-additions/**/*.tsv
-!batch/tracker-additions/.gitkeep
-jds/*
-!jds/.gitkeep
 
 # User config and customization (never auto-updated)
 config/profile.yml
 config/portals.yml
 modes/_profile.md
-.update-dismissed
-.update-lock
 
 # Secrets (never commit — use .env.example as template)
 .env
@@ -45,7 +33,6 @@ bun.lock
 # Claude Code local
 .claude/settings.local.json
 .claude/memory/
-career-dashboard
 package-lock.json
 
 # Local AI URL batch (never commit real job links)

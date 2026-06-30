@@ -233,31 +233,26 @@ Features: 6 filter tabs, 4 sort modes, grouped/flat view, lazy-loaded previews, 
 ```
 career-ops/
 ├── CLAUDE.md                    # Agent instructions
+├── jobhunt/                     # JOBHUNT Command Center pipeline (primary)
+│   └── RUNBOOK.md               # Canonical runbook
 ├── cv.md                        # Your CV (create this)
 ├── article-digest.md            # Your proof points (optional)
 ├── config/
-│   └── profile.example.yml      # Template for your profile
-├── modes/                       # 14 skill modes
-│   ├── _shared.md               # Shared context (customize this)
-│   ├── oferta.md                # Single evaluation
-│   ├── pdf.md                   # PDF generation
+│   ├── profile.example.yml      # Template for your profile
+│   └── portals.yml              # Portal scanner config (gitignored)
+├── modes/                       # Cursor skill modes
+│   ├── _shared.md               # Shared context
+│   ├── latex.md                 # LaTeX CV export
 │   ├── scan.md                  # Portal scanner
-│   ├── batch.md                 # Batch processing
 │   └── ...
 ├── templates/
-│   ├── cv-template.html         # ATS-optimized CV template
+│   ├── cv-template.tex          # LaTeX CV template
 │   ├── portals.example.yml      # Scanner config template
-│   └── states.yml               # Canonical statuses
-├── batch/
-│   ├── batch-prompt.md          # Self-contained worker prompt
-│   └── batch-runner.sh          # Orchestrator script
-├── dashboard/                   # Go TUI pipeline viewer
-├── data/                        # Your tracking data (gitignored)
-├── reports/                     # Evaluation reports (gitignored)
+│   └── outreach/                # Stage 3 outreach templates
+├── integrations/                # Google, Apollo, Anthropic
+├── data/                        # Pipeline run data (gitignored)
 ├── output/                      # Generated PDFs (gitignored)
-├── fonts/                       # Space Grotesk + DM Sans
-├── docs/                        # Setup, customization, architecture
-└── examples/                    # Sample CV, report, proof points
+└── docs/                        # Setup, customization, architecture
 ```
 
 ## Tech Stack

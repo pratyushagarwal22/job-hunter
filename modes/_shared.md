@@ -102,17 +102,15 @@ After detecting archetype, read `modes/_profile.md` for the user's specific fram
 
 0. **Cover letter:** If the form allows it, ALWAYS include one. Same visual design as CV. JD quotes mapped to proof points. 1 page max.
 1. Read cv.md, _profile.md, and article-digest.md (if exists) before evaluating
-1b. **First evaluation of each session:** Run `node cv-sync-check.mjs`. If warnings, notify user.
 2. Detect the role archetype and adapt framing per _profile.md
 3. Cite exact lines from CV when matching
 4. Use WebSearch for comp and company data
-5. Register in tracker after evaluating
+5. For the JOBHUNT pipeline, update the Command Center sheet via `npm run jobhunt:*` scripts (see `jobhunt/RUNBOOK.md`)
 6. Generate content in the language of the JD (EN default)
 7. Be direct and actionable -- no fluff
 8. Native tech English for generated text. Short sentences, action verbs, no passive voice.
-8b. Case study URLs in PDF Professional Summary (recruiter may only read this).
-9. **Tracker additions as TSV** -- NEVER edit applications.md directly. Write TSV in `batch/tracker-additions/`.
-10. **Include `**URL:**` in every report header.**
+8b. Case study URLs in resume Professional Summary (recruiter may only read this).
+9. **Include `**URL:**` in every report header.**
 
 ### Tools
 
@@ -121,11 +119,9 @@ After detecting archetype, read `modes/_profile.md` for the user's specific fram
 | WebSearch | Comp research, trends, company culture, LinkedIn contacts, fallback for JDs |
 | WebFetch | Fallback for extracting JDs from static pages |
 | Playwright | Verify offers (browser_navigate + browser_snapshot). **NEVER 2+ agents with Playwright in parallel.** |
-| Read | cv.md, _profile.md, article-digest.md, cv-template.html |
-| Write | Temporary HTML for PDF, applications.md, reports .md |
-| Edit | Update tracker |
-| Canva MCP | Optional visual CV generation. Duplicate base design, edit text, export PDF. Requires `cv.canva_resume_design_id` in profile.yml. |
-| Bash | `node generate-pdf.mjs` |
+| Read | cv.md, _profile.md, article-digest.md, templates/cv-template.tex |
+| Write | output/*.tex, output/*.pdf, reports/*.md |
+| Bash | `node generate-latex.mjs <input.tex> [output.pdf]` |
 
 ### Time-to-offer priority
 - Working demo + metrics > perfection
@@ -148,7 +144,7 @@ These rules apply to ALL generated text that ends up in candidate-facing documen
 - "demonstrated ability to" / "best practices" (name the practice)
 
 ### Unicode normalization for ATS
-`generate-pdf.mjs` automatically normalizes em-dashes, smart quotes, and zero-width characters to ASCII equivalents for maximum ATS compatibility. But avoid generating them in the first place.
+Avoid em-dashes, smart quotes, and zero-width characters in generated resume text. Use ASCII equivalents for maximum ATS compatibility.
 
 ### Vary sentence structure
 - Don't start every bullet with the same verb

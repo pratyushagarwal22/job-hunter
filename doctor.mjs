@@ -5,7 +5,7 @@
  * Checks all prerequisites and prints a pass/fail checklist.
  */
 
-import { existsSync, mkdirSync, readdirSync } from 'fs';
+import { existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -69,10 +69,7 @@ function checkCv() {
   return {
     pass: false,
     label: 'cv.md not found',
-    fix: [
-      'Create cv.md in the project root with your CV in markdown',
-      'See examples/ for reference CVs',
-    ],
+    fix: 'Create cv.md in the project root with your CV in markdown',
   };
 }
 
@@ -105,34 +102,6 @@ function checkPortals() {
   };
 }
 
-function checkFonts() {
-  const fontsDir = join(projectRoot, 'fonts');
-  if (!existsSync(fontsDir)) {
-    return {
-      pass: false,
-      label: 'fonts/ directory not found',
-      fix: 'The fonts/ directory is required for PDF generation',
-    };
-  }
-  try {
-    const files = readdirSync(fontsDir);
-    if (files.length === 0) {
-      return {
-        pass: false,
-        label: 'fonts/ directory is empty',
-        fix: 'The fonts/ directory must contain font files for PDF generation',
-      };
-    }
-  } catch {
-    return {
-      pass: false,
-      label: 'fonts/ directory not readable',
-      fix: 'Check permissions on the fonts/ directory',
-    };
-  }
-  return { pass: true, label: 'Fonts directory ready' };
-}
-
 function checkAutoDir(name) {
   const dirPath = join(projectRoot, name);
   if (existsSync(dirPath)) {
@@ -161,10 +130,8 @@ async function main() {
     checkCv(),
     checkProfile(),
     checkPortals(),
-    checkFonts(),
     checkAutoDir('data'),
     checkAutoDir('output'),
-    checkAutoDir('reports'),
   ];
 
   let failures = 0;
@@ -187,9 +154,7 @@ async function main() {
     console.log(`Result: ${failures} issue${failures === 1 ? '' : 's'} found. Fix them and run \`npm run doctor\` again.`);
     process.exit(1);
   } else {
-    console.log('Result: All checks passed. You\'re ready to go! Run `claude` to start.');
-    console.log('');
-    console.log('Join the community: https://discord.gg/8pRpHETxa4');
+    console.log('Result: All checks passed. See jobhunt/RUNBOOK.md for the pipeline.');
     process.exit(0);
   }
 }
